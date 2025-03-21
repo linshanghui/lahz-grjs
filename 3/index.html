@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>虫洞 - 随机访问十年之约成员博客</title>
+    <link href="https://fonts.loli.net/css?family=ZCOOL+KuaiLe" rel="stylesheet">
+    <link rel="stylesheet" href="./assets/css/wormhole.css">
+    
+</head>
+<body>
+	<div class="page">
+        <div class="bg"></div>
+        <div class="container result">
+        <div class="cntr">
+        <div class="cntr-innr">
+     
+            <h3 class="title">即将奔赴 <b style="color:#F08080; text-decoration:none;" id="name"></b> 的十年</h3>
+            <p class="title">您是第 <b style="color:#F08080; text-decoration:none;" id="refer"></b> 位通过虫洞穿梭到该博客的旅客！</p>
+            <div id="vortex"></div>
+            <div class="meta">
+                <p>加入时间: <span id="time"></span></p>
+                <p>博主寄语</p>
+                <p id="message">
+                    <span class="message-left">“</span>
+                    <span class="text"></span>
+                    <span class="message-right">”</span>
+                </p>
+            </div>
+            <div class="footer">
+                Tips: <b>走心的留言更能打动人心</b><br/>
+                <a href="https://wwwlog.cn/" target="_blank">
+                    <img id="logo" src="./assets/img/logo_en_default.png" alt="十年之约" style="height: 30px;">
+                </a>
+                <div class="time">© 十年之约 2017 - <script>document.write((new Date()).getFullYear())</script></div>
+            </div>
+        </div>
+    </div>
+    </div>
+    </div>
+    <!-- 引入博客成员列表 -->
+    <script type="module">
+        import blogMembers from "./assets/js/blogMembers.js";
+
+        // 获取随机博客成员
+        function getRandomBlog() {
+            const randomIndex = Math.floor(Math.random() * blogMembers.length);
+            return blogMembers[randomIndex];
+        }
+
+        // 显示博客信息并跳转
+        function displayBlogInfoAndRedirect() {
+            const randomBlog = getRandomBlog();
+            document.getElementById("name").textContent = randomBlog.name; // 更新博客名字
+            document.getElementById("time").textContent = randomBlog.joinTime; // 更新加入时间
+            document.querySelector("#message .text").textContent = randomBlog.message; // 更新博主寄语
+
+            // 更新序号到页面
+            document.getElementById("refer").textContent = randomBlog.id; // 显示博客成员的序号
+
+            // 模拟加载时间后跳转
+            setTimeout(() => {
+                window.location.href = randomBlog.url; // 跳转到博客地址
+            }, 3000); // 3秒后跳转
+        }
+
+        // 页面加载完成后执行
+        window.onload = displayBlogInfoAndRedirect;
+    </script>
+
+</body>
+</html>

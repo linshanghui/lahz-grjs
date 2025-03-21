@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>开发日志</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+      line-height: 1.6;
+    }
+
+    h1 {
+      color: #333;
+    }
+
+    .log-container {
+      margin-bottom: 20px;
+    }
+
+    .log-date {
+      font-size: 18px;
+      font-weight: bold;
+      color: #4CAF50;
+      margin-bottom: 5px;
+      cursor: pointer;
+    }
+
+    .log-content {
+      margin-left: 20px;
+      font-size: 14px;
+      color: #555;
+      display: block; /* 默认隐藏 */
+    }
+
+    .log-content ul {
+      list-style-type: disc;
+      margin-left: 20px;
+    }
+
+    .log-content ul li {
+      margin-bottom: 5px;
+    }
+  </style>
+</head>
+<body>
+  <h1>开发日志</h1>
+
+  <!-- 日志条目 -->
+  <div class="log-container">
+    <div class="log-date" onclick="toggleContent(this)">2025年02月04日</div>
+    <div class="log-content">
+      <p>修复了用户登录功能中的一个安全漏洞。</p>
+      <p>优化了首页的加载速度。</p>
+      <p>更新了用户界面，增加了新的导航栏。</p>
+    </div>
+  </div>
+
+  <div class="log-container">
+    <div class="log-date" onclick="toggleContent(this)">2025年02月03日</div>
+    <div class="log-content">
+      <p>添加了新的用户反馈功能。</p>
+      <p>修复了搜索功能中的一个Bug。</p>
+    </div>
+  </div>
+
+  <div class="log-container">
+    <div class="log-date" onclick="toggleContent(this)">2025年02月02日</div>
+    <div class="log-content">
+      <p>完成了新功能的开发：用户可以上传头像。</p>
+      <p>优化了数据库查询性能。</p>
+    </div>
+  </div>
+
+  <div class="log-container">
+    <div class="log-date" onclick="toggleContent(this)">2025年02月01日</div>
+    <div class="log-content">
+      <p>发布了1.0版本。</p>
+      <p>新增了用户注册和登录功能。</p>
+      <p>添加了基本的用户资料管理。</p>
+    </div>
+  </div>
+
+  <script>
+    // 切换内容显示
+    function toggleContent(element) {
+      const content = element.nextElementSibling; // 获取下一个兄弟元素（即.log-content）
+      if (content.style.display === 'none') {
+        content.style.display = 'block'; // 展开
+      } else {
+        content.style.display = 'none'; // 收缩
+      }
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Loading Animation</title>
+    <style>
+        /* 保持现有 CSS 样式 */
+        body {
+            margin: 0;
+            padding: 0;
+            background: #000;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-family: Arial, sans-serif;
+        }
+
+        .loader-container {
+            text-align: center;
+        }
+
+        .loader {
+            width: 100px;
+            height: 100px;
+            border: 5px solid #333;
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 1s ease-in-out infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .loading-text {
+            color: #fff;
+            font-size: 18px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-top: 10px;
+            animation: pulse 1.5s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0% {
+                opacity: 0.5;
+            }
+            50% {
+                opacity: 1;
+            }
+            100% {
+                opacity: 0.5;
+            }
+        }
+
+        .progress-bar {
+            width: 200px;
+            height: 3px;
+            background: #333;
+            margin: 20px auto;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .progress {
+            position: absolute;
+            width: 0;
+            height: 100%;
+            background: #fff;
+            animation: progress 3s ease-in-out infinite;
+        }
+
+        @keyframes progress {
+            0% {
+                width: 0;
+            }
+            100% {
+                width: 100%;
+            }
+        }
+
+        .percentage {
+            color: #fff;
+            font-size: 14px;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="loader-container">
+        <div class="loader"></div>
+        <div class="loading-text">Loading...</div>
+        <div class="progress-bar">
+            <div class="progress"></div>
+        </div>
+        <div class="percentage">0%</div>
+    </div>
+
+    <script>
+        // 模拟加载进度
+        const percentage = document.querySelector('.percentage');
+        let progress = 0;
+        
+        const interval = setInterval(() => {
+            progress += Math.random() * 10;
+            if (progress > 100) {
+                progress = 100;
+                clearInterval(interval);
+                // 跳转到目标页面
+                window.location.href = "http://www.baidu.com";
+            }
+            percentage.textContent = Math.floor(progress) + '%';
+        }, 200);
+    </script>
+</body>
+</html>
