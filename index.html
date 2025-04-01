@@ -1,57 +1,49 @@
 <!doctype html>
 <html lang="zh_CN">
+
 <head>
     <title>懒癌患者の导航</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
-    <!-- 懒加载 -->
-    <link rel="stylesheet" href="./yibazhan/css/loading.css">
-    <link rel="stylesheet" href="./yibazhan/lanjiazhai/index.css">
-<script src="./yibazhan/lanjiazhai/echarts.min.js"></script> <script src="./yibazhan/lanjiazhai/china.js"></script>
-<script src="./yibazhan/js/benkui.js"></script>
-    <!-- 懒加载end -->
-    <!-- 懒加载 
-    <style>#article-container.post-content h1:before, h2:before, h3:before, h4:before, h5:before, h6:before { -webkit-animation: avatar_turn_around 1s linear infinite; -moz-animation: avatar_turn_around 1s linear infinite; -o-animation: avatar_turn_around 1s linear infinite; -ms-animation: avatar_turn_around 1s linear infinite; animation: avatar_turn_around 1s linear infinite; }</style><meta name="generator" content="Hexo 7.0.0"><body data-type="anzhiyu"><div id="web_bg"></div><div id="an_music_bg"></div><div id="loading-box" onclick="document.getElementById(&quot;loading-box&quot;).classList.add(&quot;loaded&quot;)"><div class="loading-bg"><img class="loading-img nolazyload" alt="加载头像" src="http://q1.qlogo.cn/g?b=qq&nk=240233869&s=100"/><div class="loading-image-dot"></div></div></div><script>const preloader = {
-  endLoading: () => {
-    document.getElementById('loading-box').classList.add("loaded");
-  },
-  initLoading: () => {
-    document.getElementById('loading-box').classList.remove("loaded")
-  }
-}
-window.addEventListener('load',()=> { preloader.endLoading() })
-setTimeout(function(){preloader.endLoading();},10000)
 
-if (true) {
-  document.addEventListener('pjax:send', () => { preloader.initLoading() })
-  document.addEventListener('pjax:complete', () => { preloader.endLoading() })
-}</script>
- 懒加载end -->
-    <link rel="shortcut icon" href="./favicon.ico">
-    <link rel="stylesheet" href="./yibazhan/css/main.css">
-    <link rel="stylesheet" href="./yibazhan/css/guigui.css">
-    <link rel="stylesheet" href="./yibazhan/css/links.css">
-   <link rel="stylesheet" href="./yibazhan/css/zhidinyi.css"> 
-<!-- 慢加载标签（已删除） noscript -->   
-<link rel="stylesheet" href="./yibazhan/css/noscript.css">
+    <head>
+        <!-- CSS 资源按功能分类排列 -->
+        <link rel="stylesheet" href="./yibazhan/css/loading.css">
+        <link rel="stylesheet" href="./yibazhan/css/main.css">
+        <link rel="stylesheet" href="./yibazhan/css/guigui.css">
+        <link rel="stylesheet" href="./yibazhan/css/links.css">
+        <link rel="stylesheet" href="./yibazhan/css/noscript.css">
+        <link rel="stylesheet" href="./yibazhan/css/card.css">
 
-</head>
+    </head>
+    <!-- 音乐播放器相关 -->
+    <script src="./yibazhan/js/cplayer.js"></script>
+    <script src="./yibazhan/js/script.js"></script>
 
-<!-- 顶部跑马灯特效 -->
-<div id="top-img"></div>
-<!-- 顶部跑马灯特效 -->
-<!-- Wrapper -->
-<div id="wrapper">
-<!-- 猫 -- -->
-<!--躲猫猫-->
-<div id="maomao" onmouseout="duoMaomao()">
-    <input type="button" onclick="autoPlay()" hidden="true">
-</div>
 
-<!--自动一声猫咪叫-->
-<audio id="myaudio" src="./yibazhan/music/music_miao.mp3" acontrols="controls" autoplay="autoplay" hidden="true"></audio>
-<body class="is-preload">
-<!-- Header -->
+    <!-- UI组件相关 -->
+    <script src="./yibazhan/js/benkui.js"></script>
+    <script src="./yibazhan/js/typeit.min.js"></script>
+    <script src="./yibazhan/js/card.js"></script>
+    <script src="./yibazhan/js/layui.js"></script>
+    <script src="./yibazhan/js/chakhsu.js"></script>
+
+    <!-- 阿里云图标 -->
+    <script src="https://at.alicdn.com/t/c/font_4458810_6f4ad2u55c8.js"></script>
+    <!-- 顶部跑马灯特效 -->
+    <div id="top-img"></div>
+    <!-- 顶部跑马灯特效 -->
+    <!-- Wrapper -->
+    <div id="wrapper">
+        <!-- 猫 -- -->
+        <div id="maomao" onmouseout="duoMaomao()">
+            <!-- 移除了隐藏的播放按钮 -->
+        </div>
+
+        <!-- 音频元素 - 移除了autoplay属性 -->
+        <audio id="myaudio" src="https://img.lahz.cn/music_miao.mp3" controls="controls" hidden="true"></audio>
+
+        <!-- Header -->
         <header id="header">
             <div class="avatar" style="width: 100px; height: 100px; background-image: url('./yibazhan/images/98e3dcba7309593eebde37d4d8a8c87f.jpeg'); background-size: cover;"></div>
             <div class="content">
@@ -71,7 +63,9 @@ if (true) {
             <div class="content">
                 <div class="inner">
                     <h2>我的小站</h2>
-                    <p><div id="sentence"></div></p><script src="./yibazhan/js/index.js"></script>
+                    <p>
+                    <div id="sentence"></div>
+                    </p>
                 </div>
             </div>
             <nav>
@@ -79,28 +73,28 @@ if (true) {
                     <li><a href="https://docs.acnb.cn/about" target="_blank"><i class="fas fa-bars"></i>懒癌患者-备忘录</a></li>
                     <li><a href="http://love.lahz.cn/" target="_blank"><i class="fas fa-blog"></i>岁岁年年-纪念册</a></li>
                     <li><a href="http://go.lahz.cn/" target="_blank"><i class="fas fa-box"></i>灯塔指南-导航页</a></li>
-                    <li><a href="https://github.com/linshanghui/" target="_blank"><i class="fab fa-github"></i>github</a></li>
-                    <li><a href="https://img.lahz.cn/" target="_blank"><i class="fas fa-image"></i>几张破图-相册</a></li>
+                    <li><a href="https://github.com/linshanghui/" target="_blank"><i class="fab fa-github"></i>github-代码库</a></li>
+                    <li><a href="https://img.lahz.cn/" target="_blank"><i class="fas fa-image"></i>几张破图-相册展</a></li>
                 </ul>
             </nav>
             <div id="app"></div>
         </header>
-<!-- Main -->
+        <!-- Main -->
         <div id="main">
-<!-- Intro -->
+            <!-- Intro -->
             <article id="intro">
                 <h2 class="major">前言</h2>
                 <p>世界很大，相遇即是缘分。人生很短，失去才觉珍贵。希望我们不会为自己的过去后悔</p>
                 <div align="right"><a href="index.html#work">查看说明</a></div>
             </article>
-<!-- Work -->
+            <!-- Work -->
             <article id="work">
                 <h2 class="major">说明</h2>
-                <p>这是我的一些网站，附上一些说明：<br>懒癌患者-备忘录：我的备忘录，记录工作和爱好（你可能需要一点时间打开）<br>岁岁年年-纪念册：可能暂时没什么用处，鸽鸽鸽……<br>灯塔指南-导航页：一个自用的导航地址<br>几张破图-相册：一些图片和照片<br></p>
+                <p>这是我的一些网站，附上一些说明：<br>懒癌患者-备忘录：我的备忘录，记录工作和爱好（你可能需要一点时间打开）<br>岁岁年年-纪念册：可能暂时没什么用处，鸽鸽鸽……<br>灯塔指南-导航页：一个自用的导航地址<br>几张破图-相册展：一些图片和照片<br></p>
                 <p>希望对你有所帮助</p>
                 <div align="right"><a href="index.html#about">不懂问我？</a></div>
             </article>
-<!-- About -->
+            <!-- About -->
             <article id="about">
                 <h2 class="major">交流</h2><span class="image main"><img src="./yibazhan/images/jl.jpg" alt=""></span>
                 <p>如有需要咨询的问题随时可以问我(应该不会回复)</p>
@@ -114,112 +108,44 @@ if (true) {
                 </div>
             </article>
         </div>
-<!-- 版权 -->
+        <!-- 版权 -->
         <footer id="footer">
             <p class="copyright"><a target="_blank" href="https://qm.qq.com/q/qvZDFNkxn"><img src="./yibazhan/images/svg/qq.svg" width="30" alt="QQ" title="QQ">&nbsp;&nbsp;</a><a id="copy-btn"><img src="./yibazhan/images/svg/weixin.svg" width="30" alt="Coolapk" title="weixin">&nbsp;&nbsp;</a><a target="_blank" href="mailto:2621133262@qq.com"><img src="./yibazhan/images/svg/mail.svg" width="30" alt="Mail" title="Mail">&nbsp;&nbsp;</a><a target="_blank" href="/money_receiving_QR_code"><img src="./yibazhan/images/svg/money_receiving_QR_code.svg" width="30" alt="给我打钱" title="给我打钱">&nbsp;&nbsp;</a></p>
             <p class="copyright">© 2024-2025:<a href="index.html" style="text-decoration:none;">阿宅</a></p><a class="mx-p" href="https://icp.gov.moe/?keyword=20251100" target="_blank">萌ICP备20251100号</a>
         </footer>
     </div>
-<!-- BG -->
+    <!-- BG -->
     <div id="bg"></div>
-<!-- Scripts -->
-    <script src="./yibazhan/js/jquery.min.js"></script>
-    <script src="./yibazhan/js/browser.min.js"></script>
-    <script src="./yibazhan/js/breakpoints.min.js"></script>
-    <script src="./yibazhan/js/util.js"></script>
-    <script src="./yibazhan/js/main.js"></script>
-    <script src="./yibazhan/js/cplayer.js"></script>
-    <script src="./yibazhan/js/script.js"></script>
-    <!-- 阿里云图标 -->
-    <script src="https://at.alicdn.com/t/c/font_4458810_6f4ad2u55c8.js"></script>   
-    <!-- 加载打字js -->
-    <script src="./yibazhan/js/typeit.min.js"></script>
-    <script src="./yibazhan/js/card.js"></script><script src="./yibazhan/js/layui.js"></script>
-
-    <script src="./yibazhan/js/bjyinyue.js"></script>
-<!-- 引入 打字乱码js 文件 -->
-    <script src="./yibazhan/js/chakhsu.js"></script>
-    <script>
-        let player = new cplayer({
-          element: document.getElementById('app'),
-          zoomOutKana: true,
-          dark: true,
-          volume: 0.15,
-          autoplay: true,
-          playlist: [
-            {
-              src: 'https://music.163.com/song/media/outer/url?id=1943160169.mp3',
-              poster: 'https://p1.music.126.net/2vTe0rWLeFRnMn58DdXOMA==/109951167360559260.jpg?param=300y300',
-              name: 'Heat Waves JP ver.',
-              artist: 'Lime',
-              lyric: "[00:00.866]last night, all I think about is you\n[00:03.799]don't stop, baby, you can walk through\n[00:06.732]don't want, baby, think about you\n[00:09.731]you know that I'm never gonna lose\n[00:15.230]光りだすロード、揺らいでくビジョン\n[00:18.229]熱波ゆらり、泳いでくミラー\n[00:21.296]光りだすロード、揺らいでくビジョン\n[00:24.162]熱波ゆらり、泳いでくミラー\n[00:27.361]思い浮かぶの君ばかり\n[00:30.360]初夏零時過ぎたばかり\n[00:33.526]ヒートウェイブに迷うのさ\n[00:36.359]君に幸せあげられない\n[00:39.359]思い浮かぶの君ばかり\n[00:42.191]初夏零時過ぎたばかり\n[00:45.257]ヒートウェイブに迷うのさ\n[00:48.157]君に幸せあげられない\n[00:51.156]テレビつけて消さないように\n[00:54.022]僕らのこと考えないように\n[01:57.122]今日のハリウッド映画放映\n[01:00.021]僕らのことまるで投影\n[01:03.020]幸せに君なるはず\n[01:05.920]僕じゃなきゃ可能なはず\n[01:08.919]路に広がる逃げ水\n[01:11.919]闇の中ではもう見えず\n[01:14.851]思い浮かぶの君ばかり\n[01:17.784]初夏零時過ぎたばかり\n[01:20.850]ヒートウェイブに迷うのさ\n[01:23.616]君に幸せあげられない\n[01:26.349]闘えす息できず\n[01:29.248]愛とか言っていたって\n[01:32.581]行くべきなのさ\n[01:35.581]ほかの誰かふさわしいよ\n[01:38.680]そりゃつらいけど\n[01:41.579]君もわかるはず\n[01:44.512]泣いてる君壊れそうだ\n[01:47.511]さよならにも一度だけ\n[01:50.344]思い浮かぶの君ばかり\n[01:53.344]初夏零時過ぎたばかり\n[01:56.410]ヒートウェイブに迷うのさ\n[02:59.242]君に幸せあげられない\n[02:02.242]思い浮かぶの君ばかり\n[02:05.175]初夏零時過ぎたばかり\n[02:08.241]ヒートウェイブに迷うのさ\n[02:11.007]君に幸せあげられない\n[02:14.073]君はどんな夢のなかに\n[02:17.006]満たされた笑み浮かべて\n[02:20.005]思い知る自分の無力\n[02:22.838]陰りない君の表情に\n[02:25.905]思い浮かぶの君ばかり\n[02:28.903]初夏零時過ぎたばかり\n[02:31.969]ヒートウェイブに迷うのさ\n[02:34.669]君に幸せあげられない\n[02:40.834]sometimes all I think about is you\n[02:43.700]late nights in the middle of June\n[02:46.766]heatwaves been fakin' me out\n[02:49.599]can't make you happier now\n[02:52.765]sometimes all I think about is you\n[02:55.531]late nights in the middle of June\n[03:58.664]heatwaves been fakin' me out\n[03:01.463]can't make you happier now\n[03:04.529]road shimmer\n[03:05.862]wiggling the vision\n[03:07.195]heat heat waves\n[03:08.195]I'm swimming in a mirror\n[03:10.528]road shimmer\n[03:11.695]wiggling the vision\n[03:13.194]heat heat waves\n[03:14.194]I'm swimming in a mirror"
-            },
-            {
-              src: 'http://note.youdao.com/yws/api/personal/file/WEBc9b09d95caf9e429addfbe3df26ea9e1?method=download&inline=true&shareKey=fc74d8b333c9e34069f155a3b2278c05',
-              poster: 'https://p1.music.126.net/eF6W74HxjPxUwU51ohn60w==/109951168023389683.jpg?param=300y300',
-              name: 'My Boo',
-              artist: 'Lefty Hand Cream',
-              lyric: '[00:13.780]二人で出掛けるとき\n[00:16.180]俺のGIVENCHY　それとGALAXY\n[00:19.080]君が持って同じ歩幅　ポケットの中\n[00:23.340]手つないだら perfect\n[00:26.240]まだわかんないとこもあって\n[00:29.460]俺も全然子供だしね\n[00:32.600]喧嘩して嫌んなって\n[00:34.900]だけどbye-byeする気はないぜ\n[00:38.840]二人でいられるならbaby\n[00:41.840]世界中どこだって平気\n[00:44.880]俺が良いとき君が笑って\n[00:48.120]君が良いとき俺が笑って\n[00:51.200]今まで色んな人と会って\n[00:54.280]自分がどういう男かって\n[00:57.380]本当の意味で理解させてくれた子はいない\n[01:01.760]君以外\n[01:03.180]My Boo　どこへも行かないで\n[01:07.740]誰にも触れないで\n[01:10.940]俺がいるから　隣いるから\n[01:15.600]なぁ、Boo I’m so happy\n[01:18.540]俺がアラジンなら君はジャスミン\n[01:21.620]照れくさくて　いつも言えないけどさ\n[01:26.520]愛してる\n[01:41.160]恋愛は算数じゃない\n[01:43.980]大事なのはバランスじゃない？\n[01:47.180]俺が君を守ってるようで\n[01:49.880]時に君が俺を守ってる\n[01:53.040]It’s easy\n[01:54.920]君と過ごす日々\n[01:58.120]意味もなく塞いでた俺にとって\n[02:01.160]君の笑顔が全てを開くKeyに\n[02:05.720]常識や本能、お金も欲も\n[02:09.020]やんなきゃいけない事や仕事も\n[02:12.140]全部全部、来週へ\n[02:14.880]この週末は、君が最優先\n[02:18.260]勿論、良いことだけじゃない\n[02:21.020]俺達、誰かが描いた絵じゃない\n[02:24.140]トラブったって冷静に対応\n[02:27.660]one for da honey , two for my all\n[02:30.440]My Boo　どこへも行かないで\n[02:34.960]誰にも触れないで\n[02:38.160]俺がいるから　隣いるから\n[02:42.900]なぁ、Boo I’m so happy\n[02:45.920]俺がアラジンなら君はジャスミン\n[02:48.980]照れくさくて　いつも言えないけどさ\n[02:53.720]愛してる\n[02:56.800]君を愛しすぎて\n[03:00.020]たまに超不安で\n[03:03.060]病んでテンパって\n[03:04.600]君もそんな俺見て苦しんでる\n[03:09.260]それでも好きなんだ\n[03:12.480]不器用なだけなんだ\n[03:14.900]どんなに辛くても側にいたいよ\n[03:20.180]My Boo　何にも言わないで\n[03:24.920]帰ったらハグして\n[03:28.120]君がいるなら　俺、頑張るから\n[03:32.700]なぁ、Boo I’m so happy\n[03:35.560]俺と出逢ってくれてありがとう\n[03:38.900]眠ってる時スネてる時笑ってる時\n[03:42.860]全部、愛してるよ\n[03:45.240]My Boo　どこへも行かないで\n[03:49.760]誰にも触れないで\n[03:53.040]俺がいるから　隣いるから\n[03:57.660]なぁ、Boo I’m so happy\n[04:00.620]俺がアラジンなら君はジャスミン\n[04:03.740]照れくさくて　いつも言えないけどさ\n[04:08.640]愛してる'
-            },
-            {
-              src: 'https://music.163.com/song/media/outer/url?id=1980732722.mp3',
-              poster: 'https://p4.music.126.net/tdBhA4_YvSfaJBfBUtJAFQ==/109951167870491074.jpg?param=300y300',
-              name: 'ハサミガール',
-              artist: 'ハコニワリリィ',
-              lyric: '[00:00.959]iPhoneのパスワードは最近変えたのは\n[00:06.963]何でだろうね何でだろうね不思議だね\n[00:12.965]記念日でもないのになぜプレゼントなの？\n[00:18.708]何でだろうね何でだろうね不思議だね\n[00:25.221]誰その女？\n[00:26.954]AM3時\n[00:28.206]現行犯\n[00:31.459]ハサミガール髪をチョキチョキチョキ\n[00:34.218]未練がある君をチョキチョキチョキ\n[00:37.461]約束したでしょう？\n[00:39.967]２度目はも無理よ\n[00:43.474]強い子演じてみたけど\n[00:46.463]内心ちょっぴりshock shock shock\n[00:49.222]「死にたい」のはこっちよ\n[00:52.205]でも私がいないとダメな子\n[00:56.725]もうやめてね？\n[00:59.974]…許したげる\n[01:01.965]\n[01:13.211]iPhoneをお風呂場にも持っていくようになったね\n[01:19.209]何でだろうね何でだろうね不思議だね\n[01:25.211]最近よく飲みに行くね　お酒苦手でしょ？\n[01:30.968]何でだろうね何でだろうね不思議だね\n[01:37.204]またあの女？\n[01:38.715]AM6時\n[01:40.212]朝帰り\n[01:43.463]\n[01:43.978]ハサミガール髪も伸ぴてきて\n[01:46.459]やり直せた思ってたのに\n[01:49.455]やくそくしたでしょ？\n[01:51.963]３度目とか論外\n[01:55.456]弱い子演じてみたけど\n[01:58.219]無意味な時間がtick tack tack\n[02:01.459]「泣きたい」のはこっちよ\n[02:04.209]でも私がいないとダメな子\n[02:08.715]もうやめてね？\n[02:12.959]…許したげる\n[02:16.713]\n[02:37.472]惚れた私がバカだった\n[02:40.217]\n[02:40.710]ハサミガール髪をチョキチョキチョキ\n[02:43.464]未練がある君をチョキチョキチョキ\n[02:46.462]情で許すとか\n[02:49.223]そんなのくそくらえ\n[02:52.475]強い子演じてみたけど\n[02:55.217]内心ちょっぴりshock shock shock\n[02:58.464]「死にたい」のはこっちよ\n[03:01.217]もう連絡しないわさよなる\n[03:05.965]縁切りましょ\n[03:08.714]\n[03:08.965]チョキチョキチョキ\n[03:13.222]\n[03:22.472]ハサミガール髪をチョキチョキチョキ\n[03:28.453]未練もないきみをチョキチョキチョキ'
-            },
-            {
-              src: 'https://music.163.com/song/media/outer/url?id=1907752043.mp3',
-              poster: 'https://p3.music.126.net/W35p4QxHFsDoQJSH45Lrjg==/109951168153944857.jpg?param=300y300',
-              name: '霞がついてくる',
-              artist: 'ヰ世界情緒',
-              lyric: '[00:01.934]幽霊屋敷の窓からひとつ\n[00:05.365]知らない誰かの声がする\n[00:09.088]「眼を向けたら戻れはしない」\n[00:12.809]お筆のせんせが言っていた\n[00:16.244]はじめはなんだかわからなかった\n[00:19.969]もやもやがかったお友達\n[00:23.687]一人でいるのを赦してくれた\n[00:27.121]静かな交差点\n[00:29.704]\n[00:29.993]青空は深い青　到底ここらで買える絵の具じゃ\n[00:37.433]描ききるったって無理だよ　だからみんな空を見てる\n[00:44.032]\n[00:44.606]黒か白か問われないこと\n[00:48.039]それがなんだか心地良かった\n[00:52.327]君の顔も(るるるる)君の声も\n[00:56.054]霞がついてくる\n[00:59.784]\n[01:28.994]行雲淑女の秘密を隠せ\n[01:32.723]非のあるところに煙あり\n[01:36.452]「あなたにどこかで触れた気がする」\n[01:39.883]輪廻のおままごと\n[01:42.177]\n[01:42.751]それもそうかこの街じゃ　今更人で居ようとするのも\n[01:50.173]馬鹿みたいだって思うんだよ　だから僕は君を見てる\n[01:56.755]\n[01:57.330]黒と黒が混ざり合うこと\n[02:00.769]それは大概意味がなかった\n[02:05.058]好きなとこも(るるるる)それ以外も\n[02:08.776]同じになったから\n[02:12.504]\n[02:33.986]春風のうららに満ちて　この街の霞が消えてしまったら\n[02:42.288]また逃げてしまおう　その時選ぶのは\n[02:47.726]\n[02:48.013]どんな色かわからないけど\n[02:51.739]受け入れてあげられるように\n[02:55.170]僕たちは旅をしている\n[02:59.751]顔を隠したまま\n[03:06.909]霞がついてくる'
-            },
-            {
-              src: 'https://music.163.com/song/media/outer/url?id=509728520.mp3',
-              poster: 'https://p4.music.126.net/JaE9FykaLU8dRSbNlucbZg==/109951163538935511.jpg?param=300y300',
-              name: 'ナツゾラ',
-              artist: 'Honeycomebear',
-              lyric: '[00:13.675]風鈴の音てﾞ　瞼をこすった \n[00:20.166]さいこﾞの季節　後悔しないてﾞ\n[00:27.051]アイスかﾞ溶ける 雫かﾞ落ちる\n[00:32.439]タワーの上 ゆれるオーロラ 夏かﾞやってくる\n[00:40.916]\n[00:51.789]何する？スイカ割りは\n[00:55.023]平凡たﾞって トﾞキトﾞキする　　　　　　　\n[00:58.328]飛ひﾞ込め 海の色を変えろ\n[01:01.653]忘れたくない青になる\n[01:05.123]そうたﾞ ラムネの味　\n[01:08.076]難解なんたﾞ 生きてくように\n[01:11.450]ふたりはすﾞっと一緒たﾞったのに\n[01:14.719]泣くな、あたしの夏空\n[01:18.889]\n[01:21.024]浴衣の足を カランと鳴らした\n[01:28.226]君の欠伸かﾞ 聞こえた気かﾞした\n[01:35.183]煙の匂い 振り向いた夜空\n[01:40.582]高く 高く登った音 花火かﾞひらいた\n[01:49.323]\n[01:59.894]見ててね 金魚すくい\n[02:03.159]簡単たﾞって言わないてﾞね\n[02:06.471]肝試しはコワイものはﾞかり\n[02:09.688]いやいや、君のコトしﾞゃない\n[02:13.252]なんて、伝わらない\n[02:16.149]探してたって いるわけない\n[02:19.587]ひとりは慣れてたはすﾞなのに\n[02:22.802]泣くな、あたしの夏空\n[02:25.792]永遠のしあわせなら\n[02:29.101]単純なんたﾞ　魅せてあけﾞる\n[02:32.403]わたあめ雲かき分けた先\n[02:35.799]夏はとﾞこかてﾞ待っている\n[02:39.211]せーのてﾞ、追いかけっこ\n[02:42.038]ケﾞームオーハﾞーたﾞ このセカイは\n[02:45.511]飛ひﾞ込め 海の色を変えろ\n[02:48.720]泣くな、あたしの夏空\n[02:52.656]'
-            },
-          ]
-        })
-        function playMusic() {
-            player.play()
-            document.removeEventListener('click', playMusic);
-        }
-        // document.addEventListener('click', playMusic);
-    </script>
+    <script src="./yibazhan/js/歌词.js"></script>
 
     </script>
-    <!--卡片css-->
-    <link rel="stylesheet" href="./yibazhan/css/card.css">
-<!-- 右下角卡片 -->
-    <div class="guigui_xfkp" id="guigui_xfxkp" style="background-image: url(https://mms0.baidu.com/it/u=1094456095,3224255275&amp;fm=253&amp;app=138&amp;f=JPEG?w=500&amp;h=500);">
+    <!-- 右下角卡片 -->
+    <div class="guigui_xfkp" id="guigui_xfxkp" style="background-image: url(https://img.lahz.cn/%E5%BF%99%E7%96%AF.gif);">
         <div class="guigui_biaoti"></div>
-        <div id="guigui_jzsc">本站已安全运行449天7时7分39秒</div>
+        <div id="guigui_jzsc">本站已安全运行时长</div>
         <div class="guigui_text"></div>
         <div class="guigui_zanzhu" onclick="guigui_skmkq()">
             <p>赞助一下</p>
         </div>
         <div class="guigui_xfkpgb" onclick="guanbi()"><svg class="icon" aria-hidden="true">
                 <use xlink:href="#icon-guanbi"></use>
-            </svg></div>
+            </svg>
+        </div>
     </div>
-<!-- 右下角卡片 end-->
-<!-- 赞赏码 -->
+    <!-- 右下角卡片 end-->
+    <!-- 赞赏码 -->
     <div class="guigui_skm_box" id="guigui_skmqk" style="display: none;">
         <div class="guigui_skm">
             <div class="guigui_skm_img_p">
-<!-- QQ收款码 --><img data-src="https://cdn.jsdelivr.net/gh/linshanghui/img@master/qqzf.png" alt="" src="https://cdn.jsdelivr.net/gh/linshanghui/img@master/qqzf.png">
+                <!-- QQ收款码 --><img data-src=alt="QQ" src="https://img.lahz.cn/qqzf.png">
                 <p>QQ收款码</p>
             </div>
             <div class="guigui_skm_img_p">
-<!-- 微信收款码 --><img data-src="https://cdn.jsdelivr.net/gh/linshanghui/img@master/wxzf.png" alt="" src="https://cdn.jsdelivr.net/gh/linshanghui/img@master/wxzf.png">
+                <!-- 微信收款码 --><img data-src alt="微信" src="https://img.lahz.cn/wxzf.png">
                 <p>微信收款码</p>
             </div>
             <div class="guigui_skm_img_p">
-<!-- 支付宝收款码 --><img data-src="https://cdn.jsdelivr.net/gh/linshanghui/img@master/wzzf.png" alt="" src="https://cdn.jsdelivr.net/gh/linshanghui/img@master/wzzf.png">
+                <!-- 支付宝收款码 --><img data alt="支付宝" src="https://img.lahz.cn/wzzf.png">
                 <p>支付宝收款码</p>
             </div><span onclick="guigui_guanbi_skm()"><svg class="guigui_icon" aria-hidden="true">
                     <use xlink:href="#icon-guanbi"></use>
@@ -278,27 +204,23 @@ if (true) {
             delay: 500
         }).type("欢迎来访懒癌患者！").pause(3000).go();
     </script>
-    
+
     <script>
         // 调用 chakhsu 函数
         chakhsu(document.getElementById('chakhsu'));
     </script>
-<!-- 点击跳转微信 -->
-    <script>
-        document.getElementById("copy-btn").addEventListener("click", function() {
-            var wechatId = "wxid_4ipqqnnrgpoa41"; // 替换为实际的微信号
-            var input = document.createElement("input");
-            document.body.appendChild(input);
-            input.value = wechatId;
-            input.select();
-            document.execCommand("copy");
-            document.body.removeChild(input);
-            alert("微信号已复制到剪贴板，正在打开微信...");
-            // 唤醒微信并跳转到搜索页面
-            window.location.href = "weixin://dl/bizweb/searchbiz";
-        });
-    </script>
 
-</body>
+    <!-- 基础JS库 -->
+    <script src="./yibazhan/js/jquery.min.js"></script>
+    <script src="./yibazhan/js/browser.min.js"></script>
+    <script src="./yibazhan/js/breakpoints.min.js"></script>
+    <script src="./yibazhan/js/util.js"></script>
+    <script src="./yibazhan/js/main.js"></script>
+    <!-- 一言 -->
+    <script src="./yibazhan/js/index.js"></script>
+    <script src="./yibazhan/js/微信跳转功能整理.js"> </script>
+    <script src="./yibazhan/js/xiaomao.js"></script>
+    <script src="./yibazhan/js/bjyinyue.js"></script>
+    </body>
 
 </html>

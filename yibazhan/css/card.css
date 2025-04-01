@@ -104,7 +104,7 @@
     height: 175px;
     padding-top: 38px;
     /* 收款码box方框 */
-    background: url(https://p0.meituan.net/csc/84b24f36435ac8e9440b497a7b614ecc24322.png) no-repeat top;
+    background: url(https://img.lahz.cn/%E7%8C%AB%E8%80%B3%E6%A1%86.png) no-repeat top;
     /*background: url(https://api.cenguigui.cn/api/weibo/api.php?type=img&url=https://tvax1.sinaimg.cn/large/008DVBeIgy1hsjtyne6obj30eo04gjrp.jpg) no-repeat top;*/
     background-size: 100% auto;
     transition: right 2s linear 0s;
@@ -353,3 +353,28 @@ a {
 		}
 	}
 	
+	
+/* 小猫叫-小猫容器样式 */
+#maomao {
+  position: fixed;
+  bottom: 40px;
+  right: -5px;
+  width: 57px;
+  height: 70px;
+  background-image: url(https://img.lahz.cn/mao.svg);
+  background-position: center;
+  background-size: cover;
+  background-repeat: no-repeat;
+  transition: background .3s;
+  cursor: pointer;
+}
+
+/* 悬停动画效果 */
+#maomao:hover {
+  background-position: 60px 50%;
+}
+
+/* 音频元素隐藏 */
+audio {
+  display: none;
+}
