@@ -2,7 +2,7 @@ let player = new cplayer({
           element: document.getElementById('app'),
           zoomOutKana: true,
           dark: true,
-          volume: 0.15,
+          volume: 0.50,
           autoplay: true,
           playlist: [
             {
