@@ -10,38 +10,35 @@
         alert("微信号已复制到剪贴板，正在打开微信...");
         window.location.href = "weixin://wxid_4ipqqnnrgpoa41";
     });
-// 给钱弹窗
-document.addEventListener('DOMContentLoaded', function() {
-  // 获取元素
-  const trigger = document.getElementById('donateTrigger');
-  const modal = document.getElementById('donateModal');
-  const closeBtn = document.getElementById('closeModal');
-  
-  // 显示弹窗
-  trigger.addEventListener('click', function() {
-    modal.classList.add('active');
-    document.body.style.overflow = 'hidden'; // 禁止背景滚动
-  });
-  
-  // 关闭弹窗
-  function closeModal() {
-    modal.classList.remove('active');
-    document.body.style.overflow = ''; // 恢复滚动
-  }
-  
-  closeBtn.addEventListener('click', closeModal);
-  
-  // 点击蒙层关闭
-  modal.addEventListener('click', function(e) {
-    if (e.target === modal) {
-      closeModal();
-    }
-  });
-  
-  // ESC键关闭
-  document.addEventListener('keydown', function(e) {
-    if (e.key === 'Escape' && modal.classList.contains('active')) {
-      closeModal();
-    }
-  });
-});
+ // 给我打钱弹窗
+ const trigger = document.getElementById('gwdq');
+        const popup = document.getElementById('popup-card');
+        const closeBtn = document.querySelector('.close-btn');
+
+        // 显示弹窗
+        trigger.addEventListener('click', function() {
+            popup.classList.add('active');
+            document.body.style.overflow = 'hidden'; // 防止背景滚动
+        });
+
+        // 关闭弹窗
+        closeBtn.addEventListener('click', function() {
+            popup.classList.remove('active');
+            document.body.style.overflow = 'auto';
+        });
+
+        // 点击弹窗外部关闭
+        popup.addEventListener('click', function(e) {
+            if (e.target === popup) {
+                popup.classList.remove('active');
+                document.body.style.overflow = 'auto';
+            }
+        });
+
+        // ESC键关闭
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape' && popup.classList.contains('active')) {
+                popup.classList.remove('active');
+                document.body.style.overflow = 'auto';
+            }
+        });
