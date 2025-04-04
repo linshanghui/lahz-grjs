@@ -1,16 +1,16 @@
-$(document).ready(function() {
-	$(document).bind('contextmenu', function(e) {
-		swal({
-			title: '为了不影响页面美观, 这边禁用了您的右键！',
-			button: {
-				text: 'OK',
-			},
-		});
-		return false;
-	});
-});
+const messages = [
+    "你猜为什么右键没用？🤔",  
+    "这个页面有魔法保护！✨",
+    "别试了，你点不出来的~ 😏",
+    "开发者说：「禁止偷看源码！」",
+    "试试Ctrl+C？可能有用哦~（骗你的）"
+];
 
-//樱花 Quaint 修改版
+document.addEventListener('contextmenu', (e) => {
+    e.preventDefault();
+    alert(messages[Math.floor(Math.random() * messages.length)]);
+});
+//樱花 Quaint 修改版 
 
 		var stop, staticx;
 		var img = new Image();
@@ -486,3 +486,4 @@ $(function() {
             responsive_dropdown ();
         });
 });
+

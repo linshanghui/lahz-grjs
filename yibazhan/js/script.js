@@ -1,15 +1,32 @@
-$(document).ready(function() {
-	$(document).bind('contextmenu', function(e) {
-		swal({
-			title: '为了不影响页面美观, 这边禁用了您的右键！',
-			button: {
-				text: 'OK',
-			},
-		});
-		return false;
-	});
-});
-
+// 提示语集合
+        const tips = [
+            "右键功能已禁用",
+            "请使用其他操作",
+            "这个不能点哦~",
+            "试试别的方式吧",
+            "操作被拦截啦"
+        ];
+        
+        // 禁用右键并显示浮动提示
+        document.addEventListener('contextmenu', (e) => {
+            e.preventDefault();
+            
+            // 创建浮动气泡
+            const bubble = document.createElement('div');
+            bubble.className = 'bubble';
+            bubble.textContent = tips[Math.floor(Math.random() * tips.length)];
+            
+            // 定位在点击位置附近
+            bubble.style.left = `${e.clientX - 20}px`;
+            bubble.style.top = `${e.clientY - 50}px`;
+            
+            document.body.appendChild(bubble);
+            
+            // 动画结束后移除元素
+            setTimeout(() => {
+                bubble.remove();
+            }, 1500);
+        });
 //樱花 Quaint 修改版 
 
 		var stop, staticx;
