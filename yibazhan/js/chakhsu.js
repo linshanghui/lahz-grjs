@@ -1,4 +1,4 @@
-var chakhsu = function (r) {
+var chakhsu = function(r) {
     function t() {
         return b[Math.floor(Math.random() * b.length)];
     }
@@ -19,39 +19,43 @@ var chakhsu = function (r) {
 
     function i() {
         var t = o[c.skillI];
-        c.step
-            ? c.step--
-            : (c.step = g,
-              c.prefixP < l.length
-                  ? (c.prefixP >= 0 && (c.text += l[c.prefixP]), c.prefixP++)
-                  : "forward" === c.direction
-                  ? c.skillP < t.length
-                      ? (c.text += t[c.skillP], c.skillP++)
-                      : c.delay
-                      ? c.delay--
-                      : (c.direction = "backward", c.delay = a)
-                  : c.skillP > 0
-                  ? (c.text = c.text.slice(0, -1), c.skillP--)
-                  : (c.skillI = (c.skillI + 1) % o.length, c.direction = "forward")),
+        c.step ?
+            c.step--
+            :
+            (c.step = g,
+                c.prefixP < l.length ?
+                (c.prefixP >= 0 && (c.text += l[c.prefixP]), c.prefixP++) :
+                "forward" === c.direction ?
+                c.skillP < t.length ?
+                (c.text += t[c.skillP], c.skillP++) :
+                c.delay ?
+                c.delay--
+                :
+                (c.direction = "backward", c.delay = a) :
+                c.skillP > 0 ?
+                (c.text = c.text.slice(0, -1), c.skillP--) :
+                (c.skillI = (c.skillI + 1) % o.length, c.direction = "forward")),
             r.textContent = c.text,
             r.appendChild(
                 n(
-                    c.prefixP < l.length
-                        ? Math.min(s, s + c.prefixP)
-                        : Math.min(s, t.length - c.skillP)
+                    c.prefixP < l.length ?
+                    Math.min(s, s + c.prefixP) :
+                    Math.min(s, t.length - c.skillP)
                 )
             ),
             setTimeout(i, d);
     }
 
-    var l = " ", // 前缀文本
+    var l = "", // 前缀文本
         o = [
-            "想躺躺不平，想卷卷不赢",
-            "其实人有三大桌.",
-            "出生时，结婚时，死亡时.",
-            "第一桌不会吃，第二桌没空吃，第三桌看着别人吃.",
-            "所以大事都是别人的，留给自己的都只是小事."
-        ].map(function (r) {
+            "愿你眼中有光， 不惧长夜",
+            "愿你心中有火， 永不熄灭",
+            "愿你脚下有路， 无畏崎岖",
+            "愿你梦里无忧， 醒时无惧",
+            "愿你被世界温柔以待",
+            "也愿你对世界温柔如初",
+            "—— 愿你出走半生，归来仍是少年"
+        ].map(function(r) {
             return r + "";
         }), // 要显示的文本数组
         a = 5, // 延迟时间
@@ -94,6 +98,6 @@ var chakhsu = function (r) {
 };
 
 // 在页面加载完成后，调用函数并绑定到指定的 DOM 元素
-document.addEventListener("DOMContentLoaded", function () {
+document.addEventListener("DOMContentLoaded", function() {
     chakhsu(document.getElementById("chakhsu"));
 });
