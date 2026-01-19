@@ -18,42 +18,29 @@ var chakhsu = function(r) {
     }
 
     function i() {
-        // 拆分当前句子为 前半句+后半句（按逗号分割）
-        var originText = o[c.skillI];
-        var textParts = originText.split("，"); // 中文逗号分割
-        var firstHalf = textParts[0] + "，"; // 前半句带逗号
-        var secondHalf = textParts[1] || ""; // 后半句
-        var fullText = firstHalf + secondHalf;
-
+        var t = o[c.skillI];
         c.step ?
             c.step--
             :
             (c.step = g,
                 c.prefixP < l.length ?
                 (c.prefixP >= 0 && (c.text += l[c.prefixP]), c.prefixP++) :
-                // 核心逻辑：先拼前半句→停留→拼后半句
                 "forward" === c.direction ?
-                // 阶段1：显示前半句
-                c.skillP < firstHalf.length ?
-                (c.text += fullText[c.skillP], c.skillP++) :
-                // 前半句显示完，停留指定时间
+                c.skillP < t.length ?
+                (c.text += t[c.skillP], c.skillP++) :
                 c.delay ?
-                c.delay-- :
-                // 阶段2：继续显示后半句
-                c.skillP < fullText.length ?
-                (c.text += fullText[c.skillP], c.skillP++) :
-                // 整句显示完，停留后反向删除
-                (c.direction = "backward", c.delay = a * 2) :
-                // 反向删除：删完切换下一句
+                c.delay--
+                :
+                (c.direction = "backward", c.delay = a) :
                 c.skillP > 0 ?
                 (c.text = c.text.slice(0, -1), c.skillP--) :
-                (c.skillI = (c.skillI + 1) % o.length, c.direction = "forward", c.delay = a)),
+                (c.skillI = (c.skillI + 1) % o.length, c.direction = "forward")),
             r.textContent = c.text,
             r.appendChild(
                 n(
                     c.prefixP < l.length ?
                     Math.min(s, s + c.prefixP) :
-                    Math.min(s, fullText.length - c.skillP)
+                    Math.min(s, t.length - c.skillP)
                 )
             ),
             setTimeout(i, d);
@@ -61,15 +48,15 @@ var chakhsu = function(r) {
 
     var l = "", // 前缀文本
         o = [
-            "欲买桂花同载酒，终不似少年游",
-            "愿你出走半生，归来仍是少年"
+            "欲买桂花同载酒"，"终不似少年游",
+            "愿你出走半生"，"归来仍是少年"
         ].map(function(r) {
             return r + "";
         }), // 要显示的文本数组
-        a = 20, // 前半句停留时间（数值越大停留越久）
-        g = 3, // 闪烁字符步长
-        s = 5, // 闪烁字符最大数量
-        d = 120, // 动画更新间隔
+        a = 20, // 延迟时间
+        g = 5, // 闪烁字符的步长
+        s = 5, // 闪烁字符的最大数量
+        d = 120, // 每次更新的时间间隔
         b = [
             "rgb(110,64,170)",
             "rgb(150,61,179)",
@@ -105,7 +92,7 @@ var chakhsu = function(r) {
     i(); // 启动动画
 };
 
-// 页面加载完成后执行，绑定到 DOM 元素
+// 在页面加载完成后，调用函数并绑定到指定的 DOM 元素
 document.addEventListener("DOMContentLoaded", function() {
     chakhsu(document.getElementById("chakhsu"));
 });
