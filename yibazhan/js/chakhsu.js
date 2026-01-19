@@ -18,45 +18,42 @@ var chakhsu = function(r) {
     }
 
     function i() {
-        var t = o[c.skillI];
-        var halfLen = Math.floor(t.length / 2); // 计算句子半长
-        
+        // 拆分当前句子为 前半句+后半句（按逗号分割）
+        var originText = o[c.skillI];
+        var textParts = originText.split("，"); // 中文逗号分割
+        var firstHalf = textParts[0] + "，"; // 前半句带逗号
+        var secondHalf = textParts[1] || ""; // 后半句
+        var fullText = firstHalf + secondHalf;
+
         c.step ?
             c.step--
             :
             (c.step = g,
                 c.prefixP < l.length ?
                 (c.prefixP >= 0 && (c.text += l[c.prefixP]), c.prefixP++) :
-                // 核心三段逻辑：显示前半句 → 删除前半句 → 显示后半句
-                "showFirstHalf" === c.phase ?
+                // 核心逻辑：先拼前半句→停留→拼后半句
+                "forward" === c.direction ?
                 // 阶段1：显示前半句
-                c.skillP < halfLen ?
-                (c.text += t[c.skillP], c.skillP++) :
+                c.skillP < firstHalf.length ?
+                (c.text += fullText[c.skillP], c.skillP++) :
+                // 前半句显示完，停留指定时间
                 c.delay ?
                 c.delay-- :
-                (c.phase = "deleteFirstHalf", c.delay = a) :
-                "deleteFirstHalf" === c.phase ?
-                // 阶段2：删除前半句
+                // 阶段2：继续显示后半句
+                c.skillP < fullText.length ?
+                (c.text += fullText[c.skillP], c.skillP++) :
+                // 整句显示完，停留后反向删除
+                (c.direction = "backward", c.delay = a * 2) :
+                // 反向删除：删完切换下一句
                 c.skillP > 0 ?
                 (c.text = c.text.slice(0, -1), c.skillP--) :
-                c.delay ?
-                c.delay-- :
-                (c.phase = "showSecondHalf", c.skillP = halfLen, c.delay = a) :
-                "showSecondHalf" === c.phase ?
-                // 阶段3：显示后半句
-                c.skillP < t.length ?
-                (c.text += t[c.skillP], c.skillP++) :
-                c.delay ?
-                c.delay-- :
-                // 重置状态，切换下一句
-                (c.phase = "showFirstHalf", c.skillP = 0, c.skillI = (c.skillI + 1) % o.length, c.delay = a) :
-                void 0),
+                (c.skillI = (c.skillI + 1) % o.length, c.direction = "forward", c.delay = a)),
             r.textContent = c.text,
             r.appendChild(
                 n(
                     c.prefixP < l.length ?
                     Math.min(s, s + c.prefixP) :
-                    Math.min(s, t.length - c.skillP)
+                    Math.min(s, fullText.length - c.skillP)
                 )
             ),
             setTimeout(i, d);
@@ -69,7 +66,7 @@ var chakhsu = function(r) {
         ].map(function(r) {
             return r + "";
         }), // 要显示的文本数组
-        a = 8, // 各阶段停留延迟时间
+        a = 20, // 前半句停留时间（数值越大停留越久）
         g = 3, // 闪烁字符步长
         s = 5, // 闪烁字符最大数量
         d = 120, // 动画更新间隔
@@ -94,22 +91,21 @@ var chakhsu = function(r) {
             "rgb(54,140,225)",
             "rgb(76,110,219)",
             "rgb(96,84,200)",
-        ], // 闪烁字符颜色数组
+        ], // 颜色数组
         c = {
             text: "",
             prefixP: -s,
             skillI: 0,
             skillP: 0,
+            direction: "forward",
             delay: a,
             step: g,
-            phase: "showFirstHalf" // 初始阶段：显示前半句
-        }; // 动画控制对象
+        }; // 控制对象
 
     i(); // 启动动画
 };
 
-// 页面加载完成后执行，绑定到指定DOM元素
+// 页面加载完成后执行，绑定到 DOM 元素
 document.addEventListener("DOMContentLoaded", function() {
-    var el = document.getElementById("chakhsu");
-    if (el) chakhsu(el);
+    chakhsu(document.getElementById("chakhsu"));
 });
