@@ -19,6 +19,8 @@ var chakhsu = function(r) {
 
     function i() {
         var t = o[c.skillI];
+        // 新增：计算当前句子的半长（向下取整，避免奇数长度出问题）
+        var halfLen = Math.floor(t.length / 2);
         c.step ?
             c.step--
             :
@@ -26,12 +28,14 @@ var chakhsu = function(r) {
                 c.prefixP < l.length ?
                 (c.prefixP >= 0 && (c.text += l[c.prefixP]), c.prefixP++) :
                 "forward" === c.direction ?
-                c.skillP < t.length ?
+                // 正向拼接：只拼到半句长度就停止
+                c.skillP < halfLen ?
                 (c.text += t[c.skillP], c.skillP++) :
                 c.delay ?
                 c.delay--
                 :
                 (c.direction = "backward", c.delay = a) :
+                // 反向删除：删到0就切换下一句
                 c.skillP > 0 ?
                 (c.text = c.text.slice(0, -1), c.skillP--) :
                 (c.skillI = (c.skillI + 1) % o.length, c.direction = "forward")),
