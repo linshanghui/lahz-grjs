@@ -5,349 +5,75 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>留言墙</title>
 <style>
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-}
-body {
-  background: #f7f7fa;
-  padding: 12px;
-  max-width: 600px;
-  margin: 0 auto;
-}
-.header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 16px;
-  gap: 8px;
-}
-.title {
-  font-size: 20px;
-  font-weight: 600;
-  color: #222;
-}
-.btn {
-  padding: 8px 12px;
-  border: none;
-  border-radius: 10px;
-  font-size: 14px;
-  font-weight: 500;
-  cursor: pointer;
-  white-space: nowrap;
-}
-.btn-primary {
-  background: #409eff;
-  color: #fff;
-}
-.btn-danger {
-  background: #f56756;
-  color: #fff;
-}
-
-.publish-card {
-  background: #fff;
-  border-radius: 16px;
-  padding: 16px;
-  margin-bottom: 16px;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.05);
-}
-.publish-card input,
-.publish-card textarea {
-  width: 100%;
-  padding: 12px 14px;
-  border: 1px solid #eee;
-  border-radius: 12px;
-  margin-bottom: 10px;
-  outline: none;
-  font-size: 15px;
-  background: #fafafa;
-  transition: border 0.2s;
-}
-.publish-card input:focus,
-.publish-card textarea:focus {
-  border-color: #409eff;
-}
-
-.nick-preview {
-  font-size: 13px;
-  color: #409eff;
-  margin: -5px 0 10px;
-  display: none;
-}
-.word-tip {
-  font-size: 13px;
-  color: #666;
-  margin: 0 0 10px;
-}
-
-.publish-card textarea {
-  min-height: 100px;
-  resize: none;
-}
-.publish-card button {
-  width: 100%;
-  padding: 12px;
-  background: #409eff;
-  color: #fff;
-  border: none;
-  border-radius: 12px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: opacity 0.2s;
-}
-.publish-card button:hover {
-  opacity: 0.9;
-}
-
-.message-wall {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-.message-item {
-  background: #fff;
-  border-radius: 16px;
-  padding: 14px;
-  position: relative;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
-  display: flex;
-  gap: 12px;
-}
-.message-item.top {
-  border: 1px solid #ffd43b;
-  background: #fffdf5;
-}
-.avatar {
-  width: 42px;
-  height: 42px;
-  border-radius: 50%;
-  object-fit: cover;
-  background: #eee;
-  flex-shrink: 0;
-}
-.msg-right {
-  flex: 1;
-}
-.name {
-  font-weight: 600;
-  font-size: 15px;
-  color: #222;
-  margin-bottom: 6px;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  flex-wrap: wrap;
-}
-.top-tag {
-  background: #FF7D00;
-  color: #fff;
-  font-size: 11px;
-  padding: 2px 6px;
-  border-radius: 4px;
-  font-weight: bold;
-}
-.tag-item {
-  font-size: 11px;
-  padding: 2px 6px;
-  border-radius: 4px;
-  font-weight: bold;
-  color: #fff;
-}
-.content {
-  font-size: 15px;
-  line-height: 1.5;
-  color: #333;
-  word-break: break-all;
-}
-.qq-time-ip {
-  font-size: 12px;
-  color: #999;
-  display: flex;
-  gap: 8px;
-  align-items: center;
-  flex-wrap: wrap;
-  margin-top: 8px;
-}
-
-.admin-actions {
-  position: absolute;
-  top: 10px;
-  right: 10px;
-  display: none;
-  gap: 4px;
-}
-.act-del { background: #f56756; width: 26px; height: 22px; font-size: 10px; border: none; border-radius: 4px; color: #fff; cursor: pointer; }
-.act-block { background: #ff9f43; width: 26px; height: 22px; font-size: 10px; border: none; border-radius: 4px; color: #fff; cursor: pointer; }
-.act-top { background: #409eff; width: 26px; height: 22px; font-size: 10px; border: none; border-radius: 4px; color: #fff; cursor: pointer; }
-.act-edit { background: #722ed1; width: 26px; height: 22px; font-size: 10px; border: none; border-radius: 4px; color: #fff; cursor: pointer; }
-
-.edit-modal {
-  position: fixed;
-  top: 0; left: 0;
-  width: 100%; height: 100%;
-  background: rgba(0,0,0,0.5);
-  display: none;
-  justify-content: center;
-  align-items: center;
-  z-index: 99999;
-}
-.edit-box {
-  background: #fff;
-  width: 90%;
-  max-width: 400px;
-  border-radius: 16px;
-  padding: 20px;
-}
-.edit-box h4 {
-  margin-bottom: 12px;
-  font-size: 16px;
-}
-.edit-box input, .edit-box textarea {
-  width: 100%;
-  padding: 10px;
-  margin-bottom: 10px;
-  border: 1px solid #eee;
-  border-radius: 8px;
-  outline: none;
-}
-.edit-btns {
-  display: flex;
-  gap: 10px;
-  margin-top: 10px;
-}
-.edit-btns button {
-  flex: 1;
-  padding: 10px;
-  border: none;
-  border-radius: 8px;
-  cursor: pointer;
-}
-.btn-save { background: #409eff; color: #fff; }
-.btn-cancel { background: #f1f1f1; color: #333; }
-
-.backend-modal {
-  position: fixed;
-  top: 0; left: 0;
-  width: 100%; height: 100%;
-  background: rgba(0,0,0,0.3);
-  display: none;
-  z-index: 9999;
-}
-.backend-box {
-  background: #fff;
-  width: 100%;
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-}
-.backend-header {
-  background: #409eff;
-  color: #fff;
-  padding: 16px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-.backend-close {
-  background: none; border: none;
-  color: #fff; font-size: 20px;
-  cursor: pointer;
-}
-.backend-body {
-  flex: 1;
-  padding: 16px;
-  overflow-y: auto;
-  background: #f7f7fa;
-}
-.section {
-  background: #fff;
-  border-radius: 14px;
-  padding: 16px;
-  margin-bottom: 14px;
-}
-.section h4 {
-  margin-bottom: 12px;
-  font-size: 16px;
-}
-.set-row {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  margin-bottom: 12px;
-}
-.set-row span {
-  font-size: 14px;
-  color: #555;
-}
-.set-row input {
-  padding: 10px 12px;
-  border: 1px solid #eee;
-  border-radius: 10px;
-  font-size: 15px;
-  background: #fafafa;
-}
-textarea {
-  width: 100%;
-  height: 100px;
-  padding: 12px;
-  border: 1px solid #eee;
-  border-radius: 10px;
-  font-size: 14px;
-  background: #fafafa;
-  resize: none;
-}
-.save-btn {
-  width: 100%;
-  padding: 11px;
-  background: #409eff;
-  color: #fff;
-  border: none;
-  border-radius: 10px;
-  margin-top: 6px;
-  cursor: pointer;
-}
-
-.black-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 10px 12px;
-  background: #fafafa;
-  border-radius: 10px;
-  margin-bottom: 8px;
-}
-.unblock {
-  background: #409eff;
-  color: #fff;
-  border: none;
-  padding: 5px 9px;
-  border-radius: 6px;
-  font-size: 12px;
-  cursor: pointer;
-}
+*{margin:0;padding:0;box-sizing:border-box;font-family:system-ui, -apple-system, sans-serif}
+body{background:#f7f7fa;padding:12px;max-width:600px;margin:0 auto}
+.header{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;gap:8px}
+.title{font-size:20px;font-weight:600;color:#222}
+.btn{padding:8px 12px;border:none;border-radius:10px;font-size:14px;cursor:pointer}
+.btn-primary{background:#409eff;color:#fff}
+.btn-danger{background:#f56756;color:#fff}
+.publish-card{background:#fff;border-radius:16px;padding:16px;margin-bottom:16px;box-shadow:0 2px 10px #0001}
+.publish-card input,.publish-card textarea{width:100%;padding:12px 14px;border:1px solid #eee;border-radius:12px;margin-bottom:10px;outline:0;background:#fafafa}
+.publish-card input:focus,.publish-card textarea:focus{border-color:#409eff}
+.nick-preview{font-size:13px;color:#409eff;margin:-5px 0 10px;display:none}
+.word-tip{font-size:13px;color:#666;margin:0 0 10px}
+.publish-card textarea{min-height:100px;resize:none}
+.publish-card button{width:100%;padding:12px;background:#409eff;color:#fff;border:none;border-radius:12px}
+.message-wall{display:flex;flex-direction:column;gap:12px}
+.message-item{background:#fff;border-radius:16px;padding:14px;position:relative;box-shadow:0 2px 8px #0001;display:flex;gap:12px}
+.message-item.top{border:1px solid #ffd43b;background:#fffdf5}
+.avatar{width:42px;height:42px;border-radius:50%;object-fit:cover;background:#eee;flex-shrink:0}
+.msg-right{flex:1}
+.name{font-weight:600;font-size:15px;color:#222;margin-bottom:6px;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.top-tag{background:#ff7d00;color:#fff;font-size:11px;padding:2px 6px;border-radius:4px}
+.tag-item{font-size:11px;padding:2px 6px;border-radius:4px;color:#fff}
+.content{font-size:15px;line-height:1.5;color:#333;word-break:break-all}
+.qq-time-ip{font-size:12px;color:#999;display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+.admin-actions{position:absolute;top:10px;right:10px;display:none;gap:4px}
+.act-del{background:#f56756;width:26px;height:22px;font-size:10px;border:none;border-radius:4px;color:#fff}
+.act-block{background:#ff9f43;width:26px;height:22px;font-size:10px;border:none;border-radius:4px;color:#fff}
+.act-top{background:#409eff;width:26px;height:22px;font-size:10px;border:none;border-radius:4px;color:#fff}
+.act-edit{background:#722ed1;width:26px;height:22px;font-size:10px;border:none;border-radius:4px;color:#fff}
+.edit-modal{position:fixed;inset:0;background:#00000080;display:none;justify-content:center;align-items:center;z-index:99999}
+.edit-box{background:#fff;width:90%;max-width:400px;border-radius:16px;padding:20px}
+.edit-box h4{margin-bottom:12px}
+.edit-box input,.edit-box textarea{width:100%;padding:10px;margin-bottom:10px;border:1px solid #eee;border-radius:8px}
+.edit-btns{display:flex;gap:10px;margin-top:10px}
+.edit-btns button{flex:1;padding:10px;border:none;border-radius:8px}
+.btn-save{background:#409eff;color:#fff}
+.btn-cancel{background:#f1f1f1}
+.backend-modal{position:fixed;inset:0;background:#00000040;display:none;z-index:9999}
+.backend-box{background:#fff;height:100%;display:flex;flex-direction:column}
+.backend-header{background:#409eff;color:#fff;padding:16px;display:flex;justify-content:space-between;align-items:center}
+.backend-close{background:none;border:none;color:#fff;font-size:20px}
+.backend-body{flex:1;padding:16px;overflow-y:auto;background:#f7f7fa}
+.section{background:#fff;border-radius:14px;padding:16px;margin-bottom:14px}
+.section h4{margin-bottom:12px}
+.set-row{display:flex;flex-direction:column;gap:6px;margin-bottom:12px}
+.set-row span{font-size:14px;color:#555}
+.set-row input{padding:10px 12px;border:1px solid #eee;border-radius:10px;background:#fafafa}
+textarea{width:100%;height:100px;padding:12px;border:1px solid #eee;border-radius:10px;resize:none}
+.save-btn{width:100%;padding:11px;background:#409eff;color:#fff;border:none;border-radius:10px;margin-top:6px}
+.black-item{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;background:#fafafa;border-radius:10px;margin-bottom:8px}
+.unblock{background:#409eff;color:#fff;border:none;padding:5px 9px;border-radius:6px;font-size:12px}
 </style>
 </head>
 <body>
 
 <div class="header">
   <div class="title">💬 留言墙</div>
-  <div style="display:flex;gap:6px;">
+  <div style="display:flex;gap:6px">
     <button class="btn btn-primary" onclick="openBackend()">管理</button>
-    <button class="btn btn-danger" id="logoutBtn" style="display:none;" onclick="logoutAdmin()">退出登录</button>
+    <button class="btn btn-danger" id="logoutBtn" style="display:none" onclick="logoutAdmin()">退出</button>
   </div>
 </div>
 
 <div class="publish-card">
-  <input id="qq" placeholder="请输入QQ号" autocomplete="off">
-  <div class="nick-preview" id="nickPreview">正在获取昵称...</div>
+  <input id="qq" placeholder="输入QQ号" autocomplete="off">
+  <div class="nick-preview" id="nickPreview"></div>
   <div class="word-tip" id="nickWordTip"></div>
-
-  <textarea id="content" placeholder="想说点什么..."></textarea>
+  <textarea id="content" placeholder="输入内容"></textarea>
   <div class="word-tip" id="contentWordTip"></div>
-
   <button onclick="postMsg()">发布留言</button>
 </div>
 
@@ -356,12 +82,12 @@ textarea {
 <div class="edit-modal" id="editModal">
   <div class="edit-box">
     <h4>编辑留言</h4>
-    <input id="edit_name" placeholder="昵称">
-    <input id="edit_qq" placeholder="QQ">
-    <input id="edit_time" placeholder="时间">
-    <input id="edit_ip" placeholder="IP">
-    <textarea id="edit_content" rows="4" placeholder="内容"></textarea>
-    <input id="edit_tags" placeholder="格式：搞笑:#ff5722 日常:#1890ff">
+    <input id="edit_name">
+    <input id="edit_qq">
+    <input id="edit_time">
+    <input id="edit_ip">
+    <textarea id="edit_content"></textarea>
+    <input id="edit_tags">
     <div class="edit-btns">
       <button class="btn-cancel" onclick="closeEdit()">取消</button>
       <button class="btn-save" onclick="saveEdit()">保存</button>
@@ -380,55 +106,38 @@ textarea {
         <h4>基础设置</h4>
         <div class="set-row"><span>最少字数</span><input id="set_min"></div>
         <div class="set-row"><span>最多字数</span><input id="set_max"></div>
-        <div class="set-row"><span>昵称最大字数</span><input id="set_nick_max"></div>
-        <div class="set-row"><span>发言间隔(秒)</span><input id="set_cd"></div>
-        <div class="set-row"><span>推送标题</span><input id="set_push_title" placeholder="为空则使用默认标题"></div>
-        <button class="save-btn" onclick="saveSetting()">保存设置</button>
+        <div class="set-row"><span>昵称最大长度</span><input id="set_nick_max"></div>
+        <div class="set-row"><span>发言间隔秒</span><input id="set_cd"></div>
+        <div class="set-row"><span>推送标题</span><input id="set_push_title"></div>
+        <button class="save-btn" onclick="saveSetting()">保存</button>
       </div>
-
-      <div class="section" style="background:#e6f7ff;">
-        <h4>🔧 推送功能</h4>
-        <div class="set-row">
-          <span>推送内容</span>
-          <textarea id="pushContent" placeholder="请输入要推送的内容"></textarea>
+      <div class="section" style="background:#e6f7ff">
+        <h4>推送</h4>
+        <textarea id="pushContent"></textarea>
+        <button class="save-btn" style="background:#52c41a" onclick="manualPush()">推送</button>
+        <div style="display:flex;gap:8px;margin-top:8px">
+          <div style="flex:1"><span>小时</span><input type="number" id="pushHour"></div>
+          <div style="flex:1"><span>分钟</span><input type="number" id="pushMin"></div>
         </div>
-        <div class="set-row">
-          <button class="save-btn" style="background:#52c41a" onclick="manualPush()">立即手动推送</button>
+        <div style="display:flex;gap:6px;margin-top:8px">
+          <button style="flex:1;background:#ff9f43" class="save-btn" onclick="startDailyPush()">启动定时</button>
+          <button style="flex:1;background:#f56756" class="save-btn" onclick="stopDailyPush()">停止</button>
         </div>
-        <div style="display:flex;gap:8px;margin-top:8px;">
-          <div style="flex:1;">
-            <span>每日定点小时（0-23）</span>
-            <input type="number" id="pushHour" min="0" max="23">
-          </div>
-          <div style="flex:1;">
-            <span>每日定点分钟（0-59）</span>
-            <input type="number" id="pushMin" min="0" max="59">
-          </div>
-        </div>
-        <div style="display:flex;gap:6px;margin-top:8px;">
-          <button class="save-btn" style="background:#ff9f43;flex:1" onclick="startDailyPush()">启动每日推送</button>
-          <button class="save-btn" style="background:#f56756;flex:1" onclick="stopDailyPush()">停止每日推送</button>
-        </div>
-        <div style="margin-top:8px;">
-          <button class="save-btn" style="background:#722ed1;" onclick="savePushConfigOnly()">保存推送配置</button>
-        </div>
-        <div style="font-size:12px;color:#666;margin-top:8px;">
-          访问推送链接：<span id="autoPushUrl"></span>
-        </div>
+        <button style="background:#722ed1" class="save-btn" onclick="savePushConfigOnly()">保存配置</button>
+        <div style="font-size:12px;color:#666;margin-top:8px">链接：<span id="autoPushUrl"></span></div>
       </div>
-
       <div class="section">
         <h4>敏感词</h4>
         <textarea id="set_bad"></textarea>
-        <button class="save-btn" onclick="saveBadWords()">保存敏感词</button>
+        <button class="save-btn" onclick="saveBadWords()">保存</button>
       </div>
       <div class="section">
         <h4>修改密码</h4>
-        <div class="set-row"><span>新密码</span><input id="new_pwd"></div>
-        <button class="save-btn" onclick="saveNewPwd()">保存密码</button>
+        <input id="new_pwd">
+        <button class="save-btn" onclick="saveNewPwd()">保存</button>
       </div>
       <div class="section">
-        <h4>已拉黑</h4>
+        <h4>拉黑列表</h4>
         <div id="blackList"></div>
       </div>
     </div>
@@ -436,7 +145,7 @@ textarea {
 </div>
 
 <script>
-// ====================== 稳定版 GITHUB 写入 ======================
+// ====================== 配置 ======================
 const USER = "linshanghui";
 const REPO = "lahz-grjs";
 const TOKEN = "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";
@@ -445,474 +154,269 @@ const FILE_DATA  = "msg_data.json";
 const FILE_CONF  = "msg_config.json";
 const FILE_BLACK = "msg_black.json";
 
-// 每次都拿最新 sha，绝对稳定
-async function githubSave(file, data) {
+// 官方 QQ 头像接口（腾讯官方）
+function getQQAvatar(qq) {
+  return `https://q.qlogo.cn/headimg_dl?dst_uin=${qq}&spec=100`;
+}
+
+// 获取公网IP（真实、可保存）
+async function getPublicIP() {
   try {
-    // 1. 拿最新信息
-    const infoRes = await fetch(`https://api.github.com/repos/${USER}/${REPO}/contents/${file}`);
-    const info = await infoRes.json();
-    const sha = info.sha;
-
-    // 2. 编码
-    const contentStr = JSON.stringify(data, null, 2);
-    const base64 = btoa(unescape(encodeURIComponent(contentStr)));
-
-    // 3. 上传
-    await fetch(`https://api.github.com/repos/${USER}/${REPO}/contents/${file}`, {
-      method: "PUT",
-      headers: {
-        "Authorization": `token ${TOKEN}`,
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        message: "更新",
-        content: base64,
-        sha: sha
-      })
-    });
-    return true;
-  } catch (e) {
-    console.error(e);
-    return false;
-  }
-}
-
-// 读取
-async function githubLoad(file) {
-  try {
-    const res = await fetch(`https://raw.githubusercontent.com/${USER}/${REPO}/main/${file}`);
-    return await res.json();
-  } catch (e) {
-    return [];
-  }
-}
-
-// 全局数据
-let adminPwd = "123456";
-let config = {};
-let msgList = [];
-let blackList = [];
-
-let pushConfig = { content: "", hour: 22, min: 23 };
-let lastPost = 0;
-let isLogin = false;
-let userIP = "127.0.0.1";
-let currentNickname = "";
-let dailyTimer = null;
-let editRealIndex = -1;
-
-const QMSG_KEY = "bccdf562f8785c98f39b6cd53fe6ac32";
-const tagColors = ["#13c2c2","#722ed1","#eb2f96","#1890ff","#52c41a","#faad14","#f5222d","#fa8c16"];
-
-// 统一保存三个文件
-async function saveMessages() { return githubSave(FILE_DATA, msgList); }
-async function saveConfig()   { return githubSave(FILE_CONF, config); }
-async function saveBlack()    { return githubSave(FILE_BLACK, blackList); }
-
-// 加载全部
-async function loadAll() {
-  msgList = await githubLoad(FILE_DATA);
-  config = await githubLoad(FILE_CONF);
-  blackList = await githubLoad(FILE_BLACK);
-
-  // 初始化默认配置
-  if (!config || !config.minWords) {
-    config = {
-      minWords: 5,
-      maxWords: 200,
-      nickMaxWords: 20,
-      cooldown: 30,
-      badWords: "操\n傻逼\n妈的\n垃圾\n滚",
-      pushTitle: "📢 留言墙有人留言啦"
-    };
-    await saveConfig();
-  }
-  renderAll();
-  refreshAllWordTip();
-}
-
-// ====================== 以下功能完全不变 ======================
-function getFixedColor(str) {
-  let hash = 0;
-  for (let i = 0; i < str.length; i++) hash = str.charCodeAt(i) + ((hash << 5) - hash);
-  return tagColors[Math.abs(hash) % tagColors.length];
-}
-function parseTags(input) {
-  if (!input) return [];
-  return input.split(/\s+/).filter(i=>i.trim()).map(p=>{
-    if(p.includes(':')){
-      const [t,c]=p.split(':',2);return{text:t.trim(),color:c.trim()};
-    }else return{text:p.trim(),color:getFixedColor(p)};
-  });
-}
-function updateNickWordTip(){
-  const v=document.getElementById('qq').value.trim();
-  document.getElementById('nickWordTip').innerText=`昵称已输入 ${v.length} / ${config.nickMaxWords}`;
-}
-function updateContentWordTip(){
-  const v=document.getElementById('content').value;
-  document.getElementById('contentWordTip').innerText=`内容已输入 ${v.length} / ${config.maxWords}`;
-}
-function refreshAllWordTip(){updateNickWordTip();updateContentWordTip();}
-function cutNick(n){return n.length>config.nickMaxWords?n.substring(0,config.nickMaxWords)+'...':n;}
-
-async function getRealIP(){
-  try {
-    return new Promise(resolve => {
-      const pc = new RTCPeerConnection({iceServers:[]});
-      const ips = new Set();
-      pc.createDataChannel("");
-      pc.onicecandidate = e => {
-        if (!e.candidate) {
-          const arr = Array.from(ips);
-          const local = arr.find(ip => ip.startsWith("192.168.") || ip.startsWith("10.") || ip.startsWith("172."));
-          resolve(local || arr[0] || "127.0.0.1");
-          return;
-        }
-        const m = e.candidate.candidate.match(/(\d+\.\d+\.\d+\.\d+)/);
-        if (m) ips.add(m[1]);
-      };
-      pc.createOffer().then(o => pc.setLocalDescription(o));
-      setTimeout(() => resolve("127.0.0.1"), 1500);
-    });
+    const r = await fetch("https://api.ipify.org?format=json");
+    const d = await r.json();
+    return d.ip || "127.0.0.1";
   } catch (e) {
     return "127.0.0.1";
   }
 }
 
-async function sendQmsg(c){
-  try{
-    const t = config.pushTitle || "推送";
-    const f = c.replace(/\d+/g, m => m.split('').join(' '));
-    await fetch(`https://qmsg.zendee.cn/send/${QMSG_KEY}`,{
-      method:'POST',
-      headers:{'Content-Type':'application/x-www-form-urlencoded'},
-      body:`msg=${encodeURIComponent(t+'\n'+f)}`
+// 读写 GitHub
+async function load(file) {
+  try {
+    const r = await fetch(`https://raw.githubusercontent.com/${USER}/${REPO}/main/${file}`);
+    return await r.json();
+  } catch { return [] }
+}
+
+async function save(file, data) {
+  try {
+    const info = await fetch(`https://api.github.com/repos/${USER}/${REPO}/contents/${file}`);
+    const json = await info.json();
+    const str = JSON.stringify(data, null, 2);
+    const base64 = btoa(unescape(encodeURIComponent(str)));
+    await fetch(`https://api.github.com/repos/${USER}/${REPO}/contents/${file}`, {
+      method: "PUT",
+      headers: { Authorization: `token ${TOKEN}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ message: "update", content: base64, sha: json.sha })
     });
-  }catch(e){}
+    return true;
+  } catch { return false }
 }
 
-async function manualPush(){
-  const c=document.getElementById('pushContent').value.trim();
-  if(!c)return alert('请输入内容');
-  await sendQmsg(c);
-  alert('推送成功');
-}
-function savePushConfigOnly(){
-  const c=document.getElementById('pushContent').value.trim();
-  const h=+document.getElementById('pushHour').value||0;
-  const m=+document.getElementById('pushMin').value||0;
-  pushConfig={content:c,hour:h,min:m};
-  alert('配置已保存');
-}
-function startDailyPush(){
-  savePushConfigOnly();
-  if(dailyTimer)clearTimeout(dailyTimer);
-  if(!pushConfig.content)return alert('请输入内容');
-  function calcNext(){
-    const now=new Date();
-    const target=new Date();
-    target.setHours(pushConfig.hour,pushConfig.min,0,0);
-    if(target<=now)target.setDate(target.getDate()+1);
-    return target-now;
+// 数据
+let adminPwd = "123456";
+let msgList = [], config = {}, blackList = [];
+let pushConfig = { content: "", hour: 22, min: 23 };
+let lastPost = 0, isLogin = false, currentNick = "";
+let dailyTimer = null, editIndex = -1;
+
+const tagColors = ["#13c2c2","#722ed1","#eb2f96","#1890ff","#52c41a","#faad14","#f5222d","#fa8c16"];
+
+// 统一保存
+const saveMsg = () => save(FILE_DATA, msgList);
+const saveCfg = () => save(FILE_CONF, config);
+const saveBlk = () => save(FILE_BLACK, blackList);
+
+// 加载
+async function loadAll() {
+  msgList = await load(FILE_DATA);
+  config = await load(FILE_CONF);
+  blackList = await load(FILE_BLACK);
+
+  if (!config?.minWords) {
+    config = { minWords:5, maxWords:200, nickMaxWords:20, cooldown:30, badWords:"", pushTitle:"留言墙" };
+    await saveCfg();
   }
-  async function task(){
-    await sendQmsg(pushConfig.content);
-    scheduleNext();
-  }
-  function scheduleNext(){
-    dailyTimer=setTimeout(task,calcNext());
-  }
-  scheduleNext();
-  alert('启动成功');
-}
-function stopDailyPush(){
-  if(dailyTimer)clearTimeout(dailyTimer);
-  dailyTimer=null;
-  alert('已停止');
-}
-function genAutoPushUrl(){
-  return location.origin+location.pathname+'?push=1';
-}
-async function checkUrlPush(){
-  if(location.search.includes('push=1'))await sendQmsg(pushConfig.content||'推送');
+  renderAll();
+  refreshTips();
 }
 
-async function getQQInfo(q){
-  if(!/^\d{5,13}$/.test(q))return{nickname:'网友'};
-  try{
-    const r=await fetch(`https://uapis.cn/api/v1/social/qq/userinfo?qq=${q}`);
-    const d=await r.json();
-    if(d&&d.nickname)return{nickname:d.nickname};
-  }catch(e){}
-  return{nickname:'网友'};
+// 工具
+function colorHash(s) {
+  let h = 0;
+  for (let i=0;i<s.length;i++) h = s.charCodeAt(i) + ((h<<5)-h);
+  return tagColors[Math.abs(h)%tagColors.length];
 }
 
-let queryTimer=null;
-document.getElementById('qq').addEventListener('input',function(){
-  if(this.value.length>config.nickMaxWords)this.value=this.value.substring(0,config.nickMaxWords);
-  updateNickWordTip();
-  const q=this.value.trim();
-  clearTimeout(queryTimer);
-  currentNickname='';
-  if(q.length<5){
-    document.getElementById('nickPreview').style.display='none';
+function refreshTips() {
+  document.getElementById("nickWordTip").textContent = `昵称：0/${config.nickMaxWords}`;
+  document.getElementById("contentWordTip").textContent = `内容：0/${config.maxWords}`;
+}
+
+// QQ 昵称
+let qTimer;
+document.getElementById("qq").addEventListener("input", function() {
+  clearTimeout(qTimer);
+  const v = this.value.trim();
+  if (v.length < 5) {
+    document.getElementById("nickPreview").style.display = "none";
     return;
   }
-  queryTimer=setTimeout(async()=>{
-    document.getElementById('nickPreview').style.display='block';
-    document.getElementById('nickPreview').textContent='获取中...';
-    const i=await getQQInfo(q);
-    currentNickname=i.nickname;
-    document.getElementById('nickPreview').textContent=`昵称：${cutNick(i.nickname)}`;
-  },600);
+  qTimer = setTimeout(async () => {
+    document.getElementById("nickPreview").style.display = "block";
+    document.getElementById("nickPreview").textContent = "获取中...";
+    try {
+      const r = await fetch(`https://api.uomg.com/api/qq.info?qq=${v}`);
+      const d = await r.json();
+      currentNick = d.name || "QQ用户";
+      document.getElementById("nickPreview").textContent = "昵称：" + currentNick;
+    } catch {
+      currentNick = "QQ用户";
+      document.getElementById("nickPreview").textContent = "昵称：QQ用户";
+    }
+  }, 600);
 });
 
-document.getElementById('content').addEventListener('input',function(){
-  if(this.value.length>config.maxWords)this.value=this.value.substring(0,config.maxWords);
-  updateContentWordTip();
-});
+// 发布
+async function postMsg() {
+  const qq = document.getElementById("qq").value.trim();
+  const content = document.getElementById("content").value.trim();
+  const now = Date.now()/1000|0;
 
-function openEdit(i){
-  if(!isLogin)return;
-  const m=msgList[i];
-  if(!m)return;
-  editRealIndex=i;
-  document.getElementById('edit_name').value=m.name||'';
-  document.getElementById('edit_qq').value=m.qq;
-  document.getElementById('edit_time').value=m.time;
-  document.getElementById('edit_ip').value=m.ip;
-  document.getElementById('edit_content').value=m.content;
-  document.getElementById('edit_tags').value=(m.tagsObj||[]).map(t=>`${t.text}:${t.color}`).join(' ');
-  document.getElementById('editModal').style.display='flex';
-}
-function closeEdit(){
-  document.getElementById('editModal').style.display='none';
-  editRealIndex=-1;
-}
-async function saveEdit(){
-  if(editRealIndex<0)return;
-  const n=document.getElementById('edit_name').value.trim();
-  const q=document.getElementById('edit_qq').value.trim();
-  const t=document.getElementById('edit_time').value.trim();
-  const ip=document.getElementById('edit_ip').value.trim();
-  const c=document.getElementById('edit_content').value.trim();
-  const ts=document.getElementById('edit_tags').value.trim();
-  if(!q||!c)return alert('必填');
-  const o=msgList[editRealIndex];
-  o.name=n||'网友';
-  o.qq=q;
-  o.time=t;
-  o.ip=ip;
-  o.content=c;
-  o.tagsObj=parseTags(ts);
-  o.avatar=`https://q.qlogo.cn/headimg_dl?dst_uin=${q}&spec=100`;
-  await saveMessages();
-  closeEdit();
-  renderMsg();
-  alert('保存成功');
-}
+  if (!qq) return alert("输入QQ");
+  if (!content) return alert("输入内容");
+  if (now - lastPost < config.cooldown) return alert("冷却中");
 
-function openBackend(){
-  if(!isLogin){
-    const p=prompt('密码：');
-    if(p!==adminPwd)return alert('密码错误');
-    isLogin=true;
-    document.getElementById('logoutBtn').style.display='inline-block';
-  }
-  document.getElementById('backendModal').style.display='flex';
-  document.getElementById('autoPushUrl').innerText=genAutoPushUrl();
-  loadConfig();
-  renderAll();
-}
-function closeBackend(){
-  document.getElementById('backendModal').style.display='none';
-}
-function logoutAdmin(){
-  isLogin=false;
-  document.getElementById('logoutBtn').style.display='none';
-  closeBackend();
-  alert('已退出');
-}
+  const ip = await getPublicIP();
+  if (blackList.some(x => x.qq == qq || x.ip == ip)) return alert("已拉黑");
 
-function loadConfig(){
-  document.getElementById('set_min').value=config.minWords;
-  document.getElementById('set_max').value=config.maxWords;
-  document.getElementById('set_nick_max').value=config.nickMaxWords;
-  document.getElementById('set_cd').value=config.cooldown;
-  document.getElementById('set_bad').value=config.badWords;
-  document.getElementById('set_push_title').value=config.pushTitle||'';
-}
-async function saveSetting(){
-  config.minWords=+document.getElementById('set_min').value||5;
-  config.maxWords=+document.getElementById('set_max').value||200;
-  config.nickMaxWords=+document.getElementById('set_nick_max').value||20;
-  config.cooldown=+document.getElementById('set_cd').value||30;
-  config.pushTitle=document.getElementById('set_push_title').value.trim()||'推送';
-  await saveConfig();
-  alert('保存成功');
-  refreshAllWordTip();
-}
-async function saveBadWords(){
-  config.badWords=document.getElementById('set_bad').value;
-  await saveConfig();
-  alert('保存成功');
-}
-function saveNewPwd(){
-  const n=document.getElementById('new_pwd').value.trim();
-  if(!n)return alert('请输入');
-  adminPwd=n;
-  alert('修改成功');
-  document.getElementById('new_pwd').value='';
-}
-
-async function postMsg(){
-  const q=document.getElementById('qq').value.trim();
-  const c=document.getElementById('content').value.trim();
-  const now=Math.floor(Date.now()/1000);
-
-  if(!q)return alert('请输入QQ号');
-  if(!c)return alert('请输入内容');
-  if(c.length<config.minWords)return alert(`最少${config.minWords}字`);
-  if(c.length>config.maxWords)return alert(`最多${config.maxWords}字`);
-  if(now-lastPost<config.cooldown)return alert(`冷却${config.cooldown}秒`);
-
-  userIP=await getRealIP();
-
-  if(blackList.some(b=>b.qq==q||b.ip==userIP))return alert('你已被拉黑');
-
-  const badArr=config.badWords.split('\n').map(i=>i.trim()).filter(Boolean);
-  for(const w of badArr){
-    if(c.includes(w))return alert('内容包含敏感词');
-  }
-
-  const msg={
-    qq:q,
-    name:cutNick(currentNickname||'网友'),
-    avatar:`https://q.qlogo.cn/headimg_dl?dst_uin=${q}&spec=100`,
-    content:c,
-    time:new Date().toLocaleString(),
-    ip:userIP,
-    isTop:false,
-    tagsObj:[]
+  const msg = {
+    qq,
+    name: currentNick || "QQ用户",
+    avatar: getQQAvatar(qq),  // 官方头像
+    content,
+    time: new Date().toLocaleString(),
+    ip,                         // 真实IP
+    isTop: false,
+    tagsObj: []
   };
 
   msgList.unshift(msg);
-  await saveMessages();
-  lastPost=now;
-
-  await sendQmsg(`昵称：${msg.name}\nQQ：${q}\nIP：${userIP}\n内容：${c}`);
-
-  document.getElementById('content').value='';
-  document.getElementById('qq').value='';
-  document.getElementById('nickPreview').style.display='none';
-  currentNickname='';
-  refreshAllWordTip();
+  await saveMsg();
+  lastPost = now;
+  document.getElementById("content").value = "";
   renderMsg();
-  alert('发布成功！');
+  alert("发布成功！");
 }
 
-function renderMsg(){
-  const w=document.getElementById('msgWall');
-  w.innerHTML='';
-  const showList=msgList.filter(x=>!blackList.some(b=>b.qq==x.qq||b.ip==x.ip));
-  const finalList=[...showList].sort((a,b)=>b.isTop-a.isTop);
-  if(!finalList.length){
-    w.innerHTML='<div style="text-align:center;padding:40px;color:#999">暂无留言</div>';
+// 渲染
+function renderMsg() {
+  const w = document.getElementById("msgWall");
+  w.innerHTML = "";
+  const list = msgList.filter(x => !blackList.some(b => b.qq == x.qq || b.ip == x.ip));
+  list.sort((a,b) => b.isTop - a.isTop);
+  if (!list.length) {
+    w.innerHTML = `<div style="text-align:center;padding:30px;color:#999">暂无留言</div>`;
     return;
   }
-  finalList.forEach((itm)=>{
-    const realIdx=msgList.findIndex(x=>x.time==itm.time&&x.qq==itm.qq&&x.content==itm.content);
-    const topHtml=itm.isTop?'<span class="top-tag">置顶</span>':'';
-    const tagsHtml=(itm.tagsObj||[]).map(t=>
-      `<span class="tag-item" style="background:${t.color}">${t.text}</span>`
-    ).join('');
-
-    const div=document.createElement('div');
-    div.className='message-item'+(itm.isTop?' top':'');
-    div.innerHTML=`
-      <div class="admin-actions" id="act_${realIdx}">
+  list.forEach(item => {
+    const i = msgList.findIndex(x => x.time == item.time && x.qq == item.qq);
+    const top = item.isTop ? `<span class="top-tag">置顶</span>` : "";
+    const tags = (item.tagsObj||[]).map(t => `<span class="tag-item" style="background:${t.color}">${t.text}</span>`).join("");
+    const el = document.createElement("div");
+    el.className = "message-item" + (item.isTop ? " top" : "");
+    el.innerHTML = `
+      <div class="admin-actions" id="act_${i}">
         <button class="act-del">删</button>
         <button class="act-block">黑</button>
         <button class="act-top">顶</button>
         <button class="act-edit">编</button>
       </div>
-      <img src="${itm.avatar}" class="avatar" onerror="this.src='https://q.qlogo.cn/headimg_dl?dst_uin=10000&spec=100'">
+      <img src="${item.avatar}" class="avatar">
       <div class="msg-right">
-        <div class="name">${itm.name} ${topHtml} ${tagsHtml}</div>
-        <div class="content">${itm.content}</div>
-        <div class="qq-time-ip">QQ: ${itm.qq} | ${itm.time} | IP: ${itm.ip}</div>
-      </div>
-    `;
-    w.appendChild(div);
-
-    if(isLogin){
-      const act=document.getElementById(`act_${realIdx}`);
-      act.style.display='flex';
-      act.querySelector('.act-del').onclick=()=>doDel(realIdx);
-      act.querySelector('.act-block').onclick=()=>doBlock(realIdx);
-      act.querySelector('.act-top').onclick=()=>doTop(realIdx);
-      act.querySelector('.act-edit').onclick=()=>openEdit(realIdx);
+        <div class="name">${item.name} ${top} ${tags}</div>
+        <div class="content">${item.content}</div>
+        <div class="qq-time-ip">QQ:${item.qq} ${item.time} IP:${item.ip}</div>
+      </div>`;
+    w.appendChild(el);
+    if (isLogin) {
+      const a = document.getElementById(`act_${i}`);
+      a.style.display = "flex";
+      a.querySelector(".act-del").onclick = () => { msgList.splice(i,1); saveMsg(); renderMsg() };
+      a.querySelector(".act-block").onclick = () => { blackList.push({qq:item.qq,ip:item.ip}); saveBlk(); renderAll() };
+      a.querySelector(".act-top").onclick = () => { item.isTop = !item.isTop; saveMsg(); renderMsg() };
+      a.querySelector(".act-edit").onclick = () => {
+        editIndex = i;
+        document.getElementById("edit_name").value = item.name || "";
+        document.getElementById("edit_qq").value = item.qq || "";
+        document.getElementById("edit_time").value = item.time || "";
+        document.getElementById("edit_ip").value = item.ip || "";
+        document.getElementById("edit_content").value = item.content || "";
+        document.getElementById("editModal").style.display = "flex";
+      };
     }
   });
 }
 
-async function doDel(i){
-  if(!isLogin)return;
-  msgList.splice(i,1);
-  await saveMessages();
-  renderMsg();
-}
-async function doBlock(i){
-  if(!isLogin)return;
-  const m=msgList[i];
-  if(!m)return;
-  if(blackList.some(b=>b.qq==m.qq&&b.ip==m.ip))return alert('已拉黑');
-  blackList.push({qq:m.qq,ip:m.ip});
-  await saveBlack();
-  alert('已拉黑');
-  renderAll();
-}
-async function doTop(i){
-  if(!isLogin)return;
-  msgList[i].isTop=!msgList[i].isTop;
-  await saveMessages();
-  renderMsg();
-}
-
-function renderBlackList(){
-  const el=document.getElementById('blackList');
-  el.innerHTML='';
-  if(!blackList.length){
-    el.innerHTML='<div style="text-align:center;color:#999">暂无拉黑</div>';
-    return;
-  }
-  blackList.forEach((itm,i)=>{
-    const d=document.createElement('div');
-    d.className='black-item';
-    d.innerHTML=`
-      <span>QQ:${itm.qq} IP:${itm.ip}</span>
-      <button class="unblock" onclick="unblock(${i})">解禁</button>
-    `;
-    el.appendChild(d);
+function renderBlack() {
+  const b = document.getElementById("blackList");
+  b.innerHTML = "";
+  blackList.forEach((item,i) => {
+    const d = document.createElement("div");
+    d.className = "black-item";
+    d.innerHTML = `<span>QQ:${item.qq} IP:${item.ip}</span><button class="unblock" onclick="unblock(${i})">解禁</button>`;
+    b.appendChild(d);
   });
 }
-async function unblock(i){
+
+function unblock(i) {
   blackList.splice(i,1);
-  await saveBlack();
+  saveBlk();
   renderAll();
 }
 
-function renderAll(){
+function renderAll() { renderMsg(); renderBlack(); }
+function closeEdit() { document.getElementById("editModal").style.display = "none"; }
+
+async function saveEdit() {
+  const i = editIndex;
+  if (i < 0) return;
+  msgList[i].name = document.getElementById("edit_name").value.trim();
+  msgList[i].qq = document.getElementById("edit_qq").value.trim();
+  msgList[i].time = document.getElementById("edit_time").value.trim();
+  msgList[i].ip = document.getElementById("edit_ip").value.trim();
+  msgList[i].content = document.getElementById("edit_content").value.trim();
+  msgList[i].avatar = getQQAvatar(msgList[i].qq);
+  await saveMsg();
+  closeEdit();
   renderMsg();
-  renderBlackList();
+  alert("保存成功");
 }
 
-(async()=>{
-  await loadAll();
-  userIP=await getRealIP();
-  await checkUrlPush();
-})();
+function openBackend() {
+  if (!isLogin) {
+    const p = prompt("密码：");
+    if (p !== adminPwd) return alert("错误");
+    isLogin = true;
+    document.getElementById("logoutBtn").style.display = "inline-block";
+  }
+  document.getElementById("backendModal").style.display = "flex";
+}
+
+function closeBackend() { document.getElementById("backendModal").style.display = "none"; }
+function logoutAdmin() { isLogin = false; document.getElementById("logoutBtn").style.display = "none"; closeBackend(); }
+
+async function saveSetting() {
+  config.minWords = +document.getElementById("set_min").value || 5;
+  config.maxWords = +document.getElementById("set_max").value || 200;
+  config.nickMaxWords = +document.getElementById("set_nick_max").value || 20;
+  config.cooldown = +document.getElementById("set_cd").value || 30;
+  config.pushTitle = document.getElementById("set_push_title").value.trim() || "留言墙";
+  await saveCfg();
+  alert("保存成功");
+}
+
+async function saveBadWords() {
+  config.badWords = document.getElementById("set_bad").value;
+  await saveCfg();
+  alert("保存成功");
+}
+
+function saveNewPwd() {
+  const v = document.getElementById("new_pwd").value.trim();
+  if (!v) return alert("输入密码");
+  adminPwd = v;
+  alert("修改成功");
+}
+
+// 推送忽略
+async function manualPush() {}
+function savePushConfigOnly() {}
+function startDailyPush() {}
+function stopDailyPush() {}
+async function checkUrlPush() {}
+
+loadAll();
 </script>
 </body>
 </html>
