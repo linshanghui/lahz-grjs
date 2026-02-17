@@ -436,462 +436,312 @@ textarea {
 </div>
 
 <script>
+// ====================== 已经帮你填好你的信息 ======================
+const GH = {
+  user: "linshanghui",
+  repo: "lahz-grjs",
+  token: "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",
+  branch: "main"
+};
+// =================================================================
+
 let adminPwd = localStorage.getItem('adminPwd') || "123456";
-localStorage.setItem('adminPwd', adminPwd);
-
 const defaultConfig = {
-  minWords: 5,
-  maxWords: 200,
-  nickMaxWords: 20,
-  cooldown: 30,
-  badWords: "操\n傻逼\n妈的\n垃圾\n滚",
-  pushTitle: "📢 留言墙有人留言啦"
+  minWords:5, maxWords:200, nickMaxWords:20, cooldown:30,
+  badWords:"操\n傻逼\n妈的\n垃圾\n滚", pushTitle:"📢 留言墙有人留言啦"
 };
 
-let config = JSON.parse(localStorage.getItem('config')) || JSON.parse(JSON.stringify(defaultConfig));
-let msgList = JSON.parse(localStorage.getItem('msgList')) || [];
-let blackList = JSON.parse(localStorage.getItem('blackList')) || [];
-
-let pushConfig = JSON.parse(localStorage.getItem('pushConfig')) || {
-  content: "",
-  hour: 22,
-  min: 23
-};
-
-let lastPost = 0;
-let isLogin = false;
-let userIP = "127.0.0.1";
-let currentNickname = "";
-let dailyTimer = null;
-let editRealIndex = -1;
-
+let msgList = [], blackList = [], config = {}, pushConfig = {content:"", hour:22, min:23};
+let lastPost=0, isLogin=false, userIP="127.0.0.1", currentNickname="";
+let dailyTimer=null, editRealIndex=-1;
 const QMSG_KEY = "bccdf562f8785c98f39b6cd53fe6ac32";
+const tagColors = ["#13c2c2","#722ed1","#eb2f96","#1890ff","#52c41a","#faad14","#f5222d","#fa8c16"];
 
-const tagColors = [
-  "#13c2c2", "#722ed1", "#eb2f96", "#1890ff",
-  "#52c41a", "#faad14", "#f5222d", "#fa8c16"
-];
-
-// 静默同步 JSON
-function syncMessages() {
-  localStorage.setItem('messages.json', JSON.stringify(msgList, null, 2));
-}
-function syncBlacklist() {
-  localStorage.setItem('blacklist.json', JSON.stringify(blackList, null, 2));
-}
-function syncConfig() {
-  localStorage.setItem('config.json', JSON.stringify(config, null, 2));
-}
-
-// 首次加载初始化，后续只更新
-window.addEventListener('DOMContentLoaded', () => {
-  if (!localStorage.getItem('messages.json')) syncMessages();
-  if (!localStorage.getItem('blacklist.json')) syncBlacklist();
-  if (!localStorage.getItem('config.json')) syncConfig();
-});
-
-function getFixedColor(str) {
-  let hash = 0;
-  for (let i = 0; i < str.length; i++) {
-    hash = str.charCodeAt(i) + ((hash << 5) - hash);
+// GitHub 读取
+async function ghGet(path) {
+  try {
+    const res = await fetch(`https://api.github.com/repos/${GH.user}/${GH.repo}/contents/${path}?ref=${GH.branch}`);
+    const data = await res.json();
+    return JSON.parse(atob(data.content));
+  } catch (e) {
+    console.log(e);
+    return [];
   }
-  return tagColors[Math.abs(hash) % tagColors.length];
 }
 
-function parseTags(input) {
-  if (!input) return [];
-  const parts = input.split(/\s+/).filter(i => i.trim());
-  return parts.map(p => {
-    if (p.includes(':')) {
-      const [text, color] = p.split(':', 2);
-      return { text: text.trim(), color: color.trim() };
-    } else {
-      return { text: p.trim(), color: getFixedColor(p) };
+// GitHub 写入
+async function ghPut(path, data) {
+  try {
+    const url = `https://api.github.com/repos/${GH.user}/${GH.repo}/contents/${path}`;
+    const headers = { Authorization: `token ${GH.token}` };
+
+    const getRes = await fetch(url + "?ref=" + GH.branch);
+    const getJson = await getRes.json();
+    const sha = getJson.sha;
+
+    const content = btoa(unescape(encodeURIComponent(JSON.stringify(data, null, 2))));
+
+    await fetch(url, {
+      method: "PUT",
+      headers,
+      body: JSON.stringify({
+        message: "save",
+        content: content,
+        sha: sha,
+        branch: GH.branch
+      })
+    });
+    return true;
+  } catch (e) {
+    console.error("保存失败", e);
+    return false;
+  }
+}
+
+// 同步函数
+async function syncMessages() { await ghPut("data/messages.json", msgList); }
+async function syncBlacklist() { await ghPut("data/blacklist.json", blackList); }
+async function syncConfig() { await ghPut("data/config.json", config); }
+
+// 工具
+function getFixedColor(str){
+  let hash=0;
+  for(let i=0;i<str.length;i++)hash=str.charCodeAt(i)+((hash<<5)-hash);
+  return tagColors[Math.abs(hash)%tagColors.length];
+}
+function parseTags(input){
+  if(!input)return[];
+  return input.split(/\s+/).filter(i=>i.trim()).map(p=>{
+    if(p.includes(':')){
+      const [t,c]=p.split(':',2);
+      return{text:t.trim(),color:c.trim()};
+    }else{
+      return{text:p.trim(),color:getFixedColor(p)};
     }
   });
 }
-
-function updateNickWordTip() {
-  const val = document.getElementById('qq').value.trim();
-  const len = val.length;
-  const max = config.nickMaxWords;
-  document.getElementById('nickWordTip').innerText = `昵称已输入 ${len} / ${max}`;
+function updateNickWordTip(){
+  const v=document.getElementById('qq').value.length;
+  document.getElementById('nickWordTip').innerText=`昵称已输入 ${v}/${config.nickMaxWords}`;
 }
-
-function updateContentWordTip() {
-  const val = document.getElementById('content').value;
-  const len = val.length;
-  const max = config.maxWords;
-  document.getElementById('contentWordTip').innerText = `内容已输入 ${len} / ${max}`;
+function updateContentWordTip(){
+  const v=document.getElementById('content').value.length;
+  document.getElementById('contentWordTip').innerText=`内容已输入 ${v}/${config.maxWords}`;
 }
+function refreshAllWordTip(){updateNickWordTip();updateContentWordTip()}
+function cutNick(n){return n.length>config.nickMaxWords?n.substring(0,config.nickMaxWords)+"...":n}
 
-function refreshAllWordTip() {
-  updateNickWordTip();
-  updateContentWordTip();
-}
-
-function cutNick(name) {
-  const max = config.nickMaxWords;
-  if (name.length > max) {
-    return name.substring(0, max) + "...";
-  }
-  return name;
-}
-
-async function getRealIP() {
-  try {
-    return new Promise((resolve) => {
-      window.RTCPeerConnection = window.webkitRTCPeerConnection;
-      const pc = new RTCPeerConnection({ iceServers: [] });
-      const ips = new Set();
+async function getRealIP(){
+  try{
+    return new Promise(r=>{
+      const pc=new RTCPeerConnection({iceServers:[]});
+      const s=new Set();
       pc.createDataChannel("");
-      pc.onicecandidate = (e) => {
-        if (!e.candidate) {
-          const arr = Array.from(ips);
-          const local = arr.find(ip =>
-            ip.startsWith("192.168.") || ip.startsWith("10.") || ip.startsWith("172.")
-          );
-          resolve(local || arr[0] || "127.0.0.1");
-          return;
+      pc.onicecandidate=e=>{
+        if(!e.candidate){
+          const a=Array.from(s);
+          const l=a.find(i=>i.startsWith("192.168.")||i.startsWith("10.")||i.startsWith("172."));
+          return r(l||a[0]||"127.0.0.1");
         }
-        const m = e.candidate.candidate.match(/(\d+\.\d+\.\d+\.\d+)/);
-        if (m) ips.add(m[1]);
+        const m=e.candidate.candidate.match(/(\d+\.\d+\.\d+\.\d+)/);
+        if(m)s.add(m[1]);
       };
-      pc.createOffer().then(o => pc.setLocalDescription(o));
-      setTimeout(() => resolve("127.0.0.1"), 1500);
-    });
-  } catch (e) {
-    return "127.0.0.1";
-  }
+      pc.createOffer().then(o=>pc.setLocalDescription(o));
+      setTimeout(()=>r("127.0.0.1"),1500);
+    })
+  }catch(e){return"127.0.0.1"}
 }
 
-async function sendQmsg(content) {
-  try {
-    const title = config.pushTitle || "推送";
-    const finalContent = content.replace(/\d+/g, m => m.split('').join(' '));
-    await fetch(`https://qmsg.zendee.cn/send/${QMSG_KEY}`, {
-      method: "POST",
-      headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      body: `msg=${encodeURIComponent(title + "\n" + finalContent)}`
-    });
-  } catch(e) {}
+async function sendQmsg(c){
+  try{
+    const t=config.pushTitle||"推送";
+    await fetch(`https://qmsg.zendee.cn/send/${QMSG_KEY}`,{
+      method:"POST",
+      headers:{"Content-Type":"application/x-www-form-urlencoded"},
+      body:`msg=${encodeURIComponent(t+"\n"+c.replace(/\d/g,m=>m.split('').join(' ')))}`
+    })
+  }catch(e){}
 }
-
-async function manualPush() {
-  const c = document.getElementById('pushContent').value.trim();
-  if (!c) return alert('请输入推送内容');
+async function manualPush(){
+  const c=document.getElementById('pushContent').value.trim();
+  if(!c)return alert('请输入内容');
   await sendQmsg(c);
-  alert('✅ 手动推送成功！');
+  alert('✅ 推送成功');
 }
-
-function savePushConfigOnly() {
-  const content = document.getElementById('pushContent').value.trim();
-  const hour = parseInt(document.getElementById('pushHour').value) || 0;
-  const min = parseInt(document.getElementById('pushMin').value) || 0;
-  pushConfig = { content, hour, min };
-  localStorage.setItem('pushConfig', JSON.stringify(pushConfig));
-  alert('✅ 推送配置已保存');
+function savePushConfigOnly(){
+  const c=document.getElementById('pushContent').value.trim();
+  const h=+document.getElementById('pushHour').value||0;
+  const m=+document.getElementById('pushMin').value||0;
+  pushConfig={content:c,hour:h,min:m};
+  localStorage.setItem('pushConfig',JSON.stringify(pushConfig));
+  alert('✅ 保存配置');
 }
-
-function startDailyPush() {
-  const content = document.getElementById('pushContent').value.trim();
-  const hour = parseInt(document.getElementById('pushHour').value) || 0;
-  const min = parseInt(document.getElementById('pushMin').value) || 0;
-  pushConfig = { content, hour, min };
-  localStorage.setItem('pushConfig', JSON.stringify(pushConfig));
-
-  if (dailyTimer) clearTimeout(dailyTimer);
-  dailyTimer = null;
-
-  if (!pushConfig.content) {
-    alert('请输入推送内容');
-    return;
+function startDailyPush(){
+  savePushConfigOnly();
+  if(dailyTimer)clearTimeout(dailyTimer);
+  if(!pushConfig.content)return alert('请输入内容');
+  function next(){
+    const n=new Date();
+    const t=new Date();
+    t.setHours(pushConfig.hour,pushConfig.min,0,0);
+    if(t<=n)t.setDate(t.getDate()+1);
+    return t-n;
   }
-
-  function calcNext() {
-    const now = new Date();
-    const target = new Date();
-    target.setHours(pushConfig.hour, pushConfig.min, 0, 0);
-    if (target <= now) target.setDate(target.getDate() + 1);
-    return target - now;
-  }
-
-  async function task() {
-    await sendQmsg(pushConfig.content);
-    scheduleNext();
-  }
-
-  function scheduleNext() {
-    dailyTimer = setTimeout(task, calcNext());
-  }
-  scheduleNext();
-
+  async function task(){await sendQmsg(pushConfig.content);sch();}
+  function sch(){dailyTimer=setTimeout(task,next());}
+  sch();
   alert(`✅ 每日 ${pushConfig.hour}:${pushConfig.min} 推送已启动`);
 }
+function stopDailyPush(){if(dailyTimer)clearTimeout(dailyTimer);dailyTimer=null;alert("✅ 已停止");}
+function genAutoPushUrl(){return location.origin+location.pathname+"?push=1";}
+async function checkUrlPush(){if(location.search.includes('push=1'))await sendQmsg(pushConfig.content||'test');}
 
-function stopDailyPush() {
-  if (dailyTimer) clearTimeout(dailyTimer);
-  dailyTimer = null;
-  alert("✅ 已停止每日推送");
+async function getQQInfo(qq){
+  if(!/^\d{5,13}$/.test(qq))return{nickname:"热心网友"};
+  try{
+    const r=await fetch(`https://uapis.cn/api/v1/social/qq/userinfo?qq=${qq}`);
+    const d=await r.json();
+    if(d&&d.nickname)return{nickname:d.nickname};
+  }catch(e){}
+  return{nickname:"热心网友"};
 }
 
-function genAutoPushUrl() {
-  return location.origin + location.pathname + "?push=1";
-}
-
-async function checkUrlPush() {
-  if (location.search.includes('push=1')) {
-    await sendQmsg(pushConfig.content || '访问推送');
-  }
-}
-
-async function getQQInfo(qq) {
-  if (!/^\d{5,13}$/.test(qq)) return { nickname: "热心网友" };
-  try {
-    let res = await fetch(`https://uapis.cn/api/v1/social/qq/userinfo?qq=${qq}`);
-    let data = await res.json();
-    if (data && data.nickname) {
-      return { nickname: data.nickname };
-    }
-  } catch(e) {}
-  return { nickname: "热心网友" };
-}
-
-let queryTimer = null;
-const qqInput = document.getElementById('qq');
-const nickPreview = document.getElementById('nickPreview');
-const contentInput = document.getElementById('content');
-
-qqInput.addEventListener('input', function() {
-  const max = config.nickMaxWords;
-  if (this.value.length > max) {
-    this.value = this.value.substring(0, max);
-  }
+let queryTimer=null;
+document.getElementById('qq').addEventListener('input',function(){
+  if(this.value.length>config.nickMaxWords)this.value=this.value.substring(0,config.nickMaxWords);
   updateNickWordTip();
-
-  const qq = this.value.trim();
-  nickPreview.style.display = 'none';
-  currentNickname = '';
-  if (qq.length < 5) return;
+  const q=this.value.trim();
+  document.getElementById('nickPreview').style.display='none';
+  currentNickname='';
+  if(q.length<5)return;
   clearTimeout(queryTimer);
-  queryTimer = setTimeout(async () => {
-    nickPreview.textContent = "正在获取昵称...";
-    nickPreview.style.display = 'block';
-    const info = await getQQInfo(qq);
-    currentNickname = info.nickname;
-    nickPreview.textContent = `当前昵称：${cutNick(info.nickname)}`;
-  }, 600);
+  queryTimer=setTimeout(async()=>{
+    const p=document.getElementById('nickPreview');
+    p.textContent='正在获取昵称...';p.style.display='block';
+    const info=await getQQInfo(q);
+    currentNickname=info.nickname;
+    p.textContent=`当前昵称：${cutNick(info.nickname)}`;
+  },600);
 });
-
-contentInput.addEventListener('input', function() {
-  const max = config.maxWords;
-  if (this.value.length > max) {
-    this.value = this.value.substring(0, max);
-  }
+document.getElementById('content').addEventListener('input',function(){
+  if(this.value.length>config.maxWords)this.value=this.value.substring(0,config.maxWords);
   updateContentWordTip();
 });
 
-function openEdit(realIdx) {
-  if (!isLogin) return;
-  const item = msgList[realIdx];
-  if (!item) return;
-  
-  editRealIndex = realIdx;
-  document.getElementById('edit_name').value = item.name || "";
-  document.getElementById('edit_qq').value = item.qq;
-  document.getElementById('edit_time').value = item.time;
-  document.getElementById('edit_ip').value = item.ip;
-  document.getElementById('edit_content').value = item.content;
-  
-  let tagStr = '';
-  if (item.tagsObj && item.tagsObj.length) {
-    tagStr = item.tagsObj.map(t => `${t.text}:${t.color}`).join(' ');
+function openEdit(i){
+  if(!isLogin)return;
+  const m=msgList[i];
+  editRealIndex=i;
+  document.getElementById('edit_name').value=m.name||'';
+  document.getElementById('edit_qq').value=m.qq;
+  document.getElementById('edit_time').value=m.time;
+  document.getElementById('edit_ip').value=m.ip;
+  document.getElementById('edit_content').value=m.content;
+  document.getElementById('edit_tags').value=(m.tagsObj||[]).map(t=>`${t.text}:${t.color}`).join(' ');
+  document.getElementById('editModal').style.display='flex';
+}
+function closeEdit(){document.getElementById('editModal').style.display='none';editRealIndex=-1}
+async function saveEdit(){
+  if(editRealIndex<0)return;
+  const n=document.getElementById('edit_name').value.trim();
+  const q=document.getElementById('edit_qq').value.trim();
+  const t=document.getElementById('edit_time').value.trim();
+  const ip=document.getElementById('edit_ip').value.trim();
+  const c=document.getElementById('edit_content').value.trim();
+  const tags=parseTags(document.getElementById('edit_tags').value.trim());
+  if(!q||!c)return alert('QQ和内容不能为空');
+  const m=msgList[editRealIndex];
+  m.name=n||'热心网友';m.qq=q;m.time=t;m.ip=ip;m.content=c;m.tagsObj=tags;
+  m.avatar=`https://q.qlogo.cn/headimg_dl?dst_uin=${q}&spec=100`;
+  await syncMessages();
+  closeEdit();renderMsg();alert('✅ 保存成功');
+}
+
+function openBackend(){
+  if(!isLogin){
+    const p=prompt("请输入管理密码：");
+    if(p!==adminPwd)return alert("密码错误");
+    isLogin=true;document.getElementById("logoutBtn").style.display="inline-block";
   }
-  document.getElementById('edit_tags').value = tagStr;
-  document.getElementById('editModal').style.display = 'flex';
+  document.getElementById("backendModal").style.display="flex";
+  document.getElementById("autoPushUrl").innerText=genAutoPushUrl();
+  loadConfig();renderAll();
+}
+function closeBackend(){document.getElementById("backendModal").style.display="none"}
+function logoutAdmin(){isLogin=false;document.getElementById("logoutBtn").style.display="none";closeBackend();alert("已退出")}
+
+function loadConfig(){
+  document.getElementById("set_min").value=config.minWords;
+  document.getElementById("set_max").value=config.maxWords;
+  document.getElementById("set_nick_max").value=config.nickMaxWords;
+  document.getElementById("set_cd").value=config.cooldown;
+  document.getElementById("set_bad").value=config.badWords;
+  document.getElementById("set_push_title").value=config.pushTitle||"";
+}
+async function saveSetting(){
+  config.minWords=+document.getElementById("set_min").value||5;
+  config.maxWords=+document.getElementById("set_max").value||200;
+  config.nickMaxWords=+document.getElementById("set_nick_max").value||20;
+  config.cooldown=+document.getElementById("set_cd").value||30;
+  config.pushTitle=document.getElementById("set_push_title").value.trim()||defaultConfig.pushTitle;
+  await syncConfig();alert("保存成功");refreshAllWordTip();
+}
+async function saveBadWords(){
+  config.badWords=document.getElementById("set_bad").value;
+  await syncConfig();alert("保存成功");
+}
+function saveNewPwd(){
+  const np=document.getElementById("new_pwd").value.trim();
+  if(!np)return alert("请输入新密码");
+  adminPwd=np;localStorage.setItem('adminPwd',adminPwd);
+  alert("密码修改成功");document.getElementById("new_pwd").value="";
 }
 
-function closeEdit() {
-  document.getElementById('editModal').style.display = 'none';
-  editRealIndex = -1;
-}
-
-function saveEdit() {
-  if (editRealIndex === -1) return;
-  const name = document.getElementById('edit_name').value.trim();
-  const qq = document.getElementById('edit_qq').value.trim();
-  const time = document.getElementById('edit_time').value.trim();
-  const ip = document.getElementById('edit_ip').value.trim();
-  const content = document.getElementById('edit_content').value.trim();
-  const tagsInput = document.getElementById('edit_tags').value.trim();
-
-  if (!qq || !content) return alert('QQ和内容不能为空');
+async function postMsg(){
+  const qq=document.getElementById("qq").value.trim();
+  const content=document.getElementById("content").value.trim();
+  const now=Math.floor(Date.now()/1000);
+  if(!qq)return alert("请输入QQ号");
+  if(!content)return alert("请输入内容");
+  if(content.length<config.minWords)return alert(`最少${config.minWords}字`);
+  if(content.length>config.maxWords)return alert(`最多${config.maxWords}字`);
+  if(now-lastPost<config.cooldown)return alert(`冷却${config.cooldown}秒`);
+  userIP=await getRealIP();
+  if(blackList.some(b=>b.qq===qq||b.ip===userIP))return alert("你已被拉黑");
+  const bad=config.badWords.split("\n").map(i=>i.trim()).filter(Boolean);
+  for(const w of bad)if(content.includes(w))return alert("包含敏感词");
   
-  const tagsObj = parseTags(tagsInput);
-  
-  const item = msgList[editRealIndex];
-  item.name = name || "热心网友";
-  item.qq = qq;
-  item.time = time;
-  item.ip = ip;
-  item.content = content;
-  item.tagsObj = tagsObj;
-  // 官方头像接口
-  item.avatar = `https://q.qlogo.cn/headimg_dl?dst_uin=${qq}&spec=100`;
-  
-  localStorage.setItem('msgList', JSON.stringify(msgList));
-  syncMessages();
-  closeEdit();
-  renderMsg();
-  alert('✅ 保存成功');
-}
-
-function openBackend() {
-  if (!isLogin) {
-    const p = prompt("请输入管理密码：");
-    if (p !== adminPwd) return alert("密码错误");
-    isLogin = true;
-    document.getElementById("logoutBtn").style.display = "inline-block";
-  }
-  document.getElementById("backendModal").style.display = "flex";
-  document.getElementById("autoPushUrl").innerText = genAutoPushUrl();
-  loadConfig();
-  renderAll();
-}
-
-function closeBackend() {
-  document.getElementById("backendModal").style.display = "none";
-}
-
-function logoutAdmin() {
-  isLogin = false;
-  document.getElementById("logoutBtn").style.display = "none";
-  closeBackend();
-  alert("已退出登录");
-}
-
-function loadConfig() {
-  document.getElementById("set_min").value = config.minWords;
-  document.getElementById("set_max").value = config.maxWords;
-  document.getElementById("set_nick_max").value = config.nickMaxWords;
-  document.getElementById("set_cd").value = config.cooldown;
-  document.getElementById("set_bad").value = config.badWords;
-  document.getElementById("set_push_title").value = config.pushTitle || "";
-}
-
-function saveSetting() {
-  config.minWords = +document.getElementById("set_min").value || 5;
-  config.maxWords = +document.getElementById("set_max").value || 200;
-  config.nickMaxWords = +document.getElementById("set_nick_max").value || 20;
-  config.cooldown = +document.getElementById("set_cd").value || 30;
-  config.pushTitle = document.getElementById("set_push_title").value.trim() || defaultConfig.pushTitle;
-  localStorage.setItem("config", JSON.stringify(config));
-  syncConfig();
-  alert("保存成功");
-  refreshAllWordTip();
-}
-
-function saveBadWords() {
-  config.badWords = document.getElementById("set_bad").value;
-  localStorage.setItem("config", JSON.stringify(config));
-  syncConfig();
-  alert("保存成功");
-}
-
-function saveNewPwd() {
-  const np = document.getElementById("new_pwd").value.trim();
-  if (!np) return alert("请输入新密码");
-  adminPwd = np;
-  localStorage.setItem("adminPwd", adminPwd);
-  alert("密码修改成功");
-  document.getElementById("new_pwd").value = "";
-}
-
-async function postMsg() {
-  const qq = document.getElementById("qq").value.trim();
-  const content = document.getElementById("content").value.trim();
-  const now = Math.floor(Date.now() / 1000);
-
-  if (!qq) return alert("请输入QQ号");
-  if (!content) return alert("请输入内容");
-  if (content.length < config.minWords) return alert(`最少${config.minWords}字`);
-  if (content.length > config.maxWords) return alert(`最多${config.maxWords}字`);
-  if (now - lastPost < config.cooldown) return alert(`发言过于频繁，请${config.cooldown}秒后再试`);
-
-  userIP = await getRealIP();
-
-  const isBlack = blackList.some(b => b.qq === qq || b.ip === userIP);
-  if (isBlack) {
-    alert("你已被拉黑，无法发言");
-    return;
-  }
-
-  const badArr = config.badWords.split("\n").map(i => i.trim()).filter(Boolean);
-  for (const w of badArr) {
-    if (content.includes(w)) return alert("内容包含敏感词");
-  }
-
-  const msgData = {
-    qq,
-    name: cutNick(currentNickname || "热心网友"),
-    // 官方头像接口
-    avatar: `https://q.qlogo.cn/headimg_dl?dst_uin=${qq}&spec=100`,
-    content,
-    time: new Date().toLocaleString(),
-    ip: userIP,
-    isTop: false,
-    tagsObj: []
+  const msg={
+    qq,name:cutNick(currentNickname||"热心网友"),
+    avatar:`https://q.qlogo.cn/headimg_dl?dst_uin=${qq}&spec=100`,
+    content,time:new Date().toLocaleString(),ip:userIP,isTop:false,tagsObj:[]
   };
-
-  msgList.unshift(msgData);
-  localStorage.setItem("msgList", JSON.stringify(msgList));
-  syncMessages();
-  lastPost = now;
-
-  await sendQmsg(`昵称：${msgData.name}\nQQ：${qq}\nIP：${userIP}\n内容：${content}`);
-
-  document.getElementById("content").value = "";
-  qqInput.value = "";
-  nickPreview.style.display = "none";
-  currentNickname = "";
-  refreshAllWordTip();
-  renderMsg();
-  alert("发布成功！");
+  msgList.unshift(msg);
+  
+  // 重点：这里一定等保存完再刷新
+  await syncMessages();
+  
+  await sendQmsg(`昵称：${msg.name}\nQQ：${qq}\nIP：${userIP}\n内容：${content}`);
+  lastPost=now;
+  document.getElementById("content").value="";
+  document.getElementById("qq").value="";
+  document.getElementById("nickPreview").style.display="none";
+  currentNickname="";refreshAllWordTip();renderMsg();alert("发布成功！");
 }
 
-function renderMsg() {
-  const w = document.getElementById("msgWall");
-  w.innerHTML = "";
-
-  const showList = msgList.filter(item => {
-    return !blackList.some(b => b.qq === item.qq || b.ip === item.ip);
-  });
-
-  const finalList = [...showList].sort((a, b) => b.isTop - a.isTop);
-
-  if (!finalList.length) {
-    w.innerHTML = `<div style='text-align:center;padding:40px;color:#999'>暂无留言</div>`;
-    return;
-  }
-
-  finalList.forEach((item) => {
-    const realIdx = msgList.findIndex(x =>
-      x.time === item.time && x.qq === item.qq && x.content === item.content
-    );
-
-    const topHtml = item.isTop ? `<span class="top-tag">置顶</span>` : '';
-    
-    let tagsHtml = '';
-    if (item.tagsObj && item.tagsObj.length) {
-      tagsHtml = item.tagsObj.map(t =>
-        `<span class="tag-item" style="background:${t.color}">${t.text}</span>`
-      ).join('');
-    }
-
-    const div = document.createElement("div");
-    div.className = "message-item " + (item.isTop ? "top" : "");
-    div.innerHTML = `
-      <div class="admin-actions" id="act_${realIdx}">
+function renderMsg(){
+  const w=document.getElementById("msgWall");w.innerHTML="";
+  const show=msgList.filter(x=>!blackList.some(b=>b.qq===x.qq||b.ip===x.ip));
+  const list=[...show].sort((a,b)=>b.isTop-a.isTop);
+  if(!list.length){w.innerHTML="<div style='text-align:center;padding:40px;color:#999'>暂无留言</div>";return}
+  list.forEach((item,i)=>{
+    const real=msgList.findIndex(x=>x.time===item.time&&x.qq===item.qq&&x.content===item.content);
+    const top=item.isTop?`<span class="top-tag">置顶</span>`:'';
+    const tags=(item.tagsObj||[]).map(t=>`<span class="tag-item" style="background:${t.color}">${t.text}</span>`).join('');
+    const div=document.createElement("div");
+    div.className="message-item "+(item.isTop?"top":"");
+    div.innerHTML=`
+      <div class="admin-actions" id="act_${real}">
         <button class="act-del">删</button>
         <button class="act-block">黑</button>
         <button class="act-top">顶</button>
@@ -899,94 +749,52 @@ function renderMsg() {
       </div>
       <img src="${item.avatar}" class="avatar" onerror="this.src='https://q.qlogo.cn/headimg_dl?dst_uin=10000&spec=100'">
       <div class="msg-right">
-        <div class="name">${item.name} ${topHtml} ${tagsHtml}</div>
+        <div class="name">${item.name} ${top} ${tags}</div>
         <div class="content">${item.content}</div>
         <div class="qq-time-ip">QQ: ${item.qq} | ${item.time} | IP: ${item.ip}</div>
       </div>
     `;
     w.appendChild(div);
-
-    if (isLogin) {
-      const el = document.getElementById(`act_${realIdx}`);
-      el.style.display = "flex";
-      el.querySelector(".act-del").onclick = () => doDel(realIdx);
-      el.querySelector(".act-block").onclick = () => doBlock(realIdx);
-      el.querySelector(".act-top").onclick = () => doTop(realIdx);
-      el.querySelector(".act-edit").onclick = () => openEdit(realIdx);
+    if(isLogin){
+      const a=document.getElementById(`act_${real}`);
+      a.style.display="flex";
+      a.querySelector(".act-del").onclick=async()=>{msgList.splice(real,1);await syncMessages();renderMsg()};
+      a.querySelector(".act-block").onclick=async()=>{
+        if(blackList.some(b=>b.qq===item.qq&&b.ip===item.ip))return alert("已拉黑");
+        blackList.push({qq:item.qq,ip:item.ip});
+        await syncBlacklist();renderAll();alert("已拉黑");
+      };
+      a.querySelector(".act-top").onclick=async()=>{msgList[real].isTop=!msgList[real].isTop;await syncMessages();renderMsg()};
+      a.querySelector(".act-edit").onclick=()=>openEdit(real);
     }
   });
 }
 
-function doDel(realIdx) {
-  if (!isLogin) return;
-  msgList.splice(realIdx, 1);
-  localStorage.setItem("msgList", JSON.stringify(msgList));
-  syncMessages();
-  renderMsg();
+function renderBlackList(){
+  const b=document.getElementById("blackList");b.innerHTML="";
+  if(!blackList.length){b.innerHTML="<div style='text-align:center;color:#999;padding:10px'>暂无拉黑</div>";return}
+  blackList.forEach((item,i)=>{
+    const d=document.createElement("div");
+    d.className="black-item";
+    d.innerHTML=`<span>QQ:${item.qq} IP:${item.ip}</span><button class="unblock" onclick="unblock(${i})">解禁</button>`;
+    b.appendChild(d);
+  })
 }
+async function unblock(i){blackList.splice(i,1);await syncBlacklist();renderAll()}
+function renderAll(){renderMsg();renderBlackList()}
 
-function doBlock(realIdx) {
-  if (!isLogin) return;
-  const item = msgList[realIdx];
-  if (!item) return;
+// 页面加载时从 GitHub 读取
+window.addEventListener('DOMContentLoaded', async () => {
+  msgList = await ghGet("data/messages.json") || [];
+  blackList = await ghGet("data/blacklist.json") || [];
+  config = await ghGet("data/config.json") || JSON.parse(JSON.stringify(defaultConfig));
+  pushConfig = JSON.parse(localStorage.getItem('pushConfig')) || {content:"",hour:22,min:23};
 
-  const already = blackList.some(b => b.qq === item.qq && b.ip === item.ip);
-  if (already) {
-    alert("已拉黑过");
-    return;
-  }
-
-  blackList.push({ qq: item.qq, ip: item.ip });
-  localStorage.setItem("blackList", JSON.stringify(blackList));
-  syncBlacklist();
-  alert("已拉黑：该用户的 QQ 和 IP 都已禁止发言 & 隐藏所有留言");
-  renderAll();
-}
-
-function doTop(realIdx) {
-  if (!isLogin) return;
-  msgList[realIdx].isTop = !msgList[realIdx].isTop;
-  localStorage.setItem("msgList", JSON.stringify(msgList));
-  syncMessages();
-  renderMsg();
-}
-
-function renderBlackList() {
-  const el = document.getElementById("blackList");
-  el.innerHTML = "";
-  if (!blackList.length) {
-    el.innerHTML = "<div style='text-align:center;color:#999;padding:10px'>暂无拉黑</div>";
-    return;
-  }
-  blackList.forEach((item, i) => {
-    const div = document.createElement("div");
-    div.className = "black-item";
-    div.innerHTML = `
-      <span>QQ: ${item.qq} | IP: ${item.ip}</span>
-      <button class="unblock" onclick="unblock(${i})">解禁</button>
-    `;
-    el.appendChild(div);
-  });
-}
-
-function unblock(i) {
-  blackList.splice(i, 1);
-  localStorage.setItem("blackList", JSON.stringify(blackList));
-  syncBlacklist();
-  renderAll();
-}
-
-function renderAll() {
-  renderMsg();
-  renderBlackList();
-}
-
-(async () => {
   userIP = await getRealIP();
   refreshAllWordTip();
   await checkUrlPush();
   renderAll();
-})();
+});
 </script>
 </body>
 </html>
