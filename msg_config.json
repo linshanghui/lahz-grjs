@@ -1,7 +1,7 @@
 {
-  "minWords": 1,
+  "minWords": 5,
   "maxWords": 200,
-  "nickMaxWords": 12,
+  "nickMaxWords": 20,
   "cooldown": 30,
   "badWords": "操\n傻逼\n妈的\n垃圾\n滚",
   "pushTitle": "📢 留言墙有人留言啦"
