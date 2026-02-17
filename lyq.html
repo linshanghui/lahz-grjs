@@ -436,31 +436,28 @@ textarea {
 </div>
 
 <script>
-// ====================== GITHUB 三文件存储 ======================
+// ====================== 稳定版 GITHUB 写入 ======================
 const USER = "linshanghui";
 const REPO = "lahz-grjs";
 const TOKEN = "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";
 
-const FILE_DATA  = "msg_data.json";   // 留言
-const FILE_CONF  = "msg_config.json"; // 配置
-const FILE_BLACK = "msg_black.json";  // 黑白单
+const FILE_DATA  = "msg_data.json";
+const FILE_CONF  = "msg_config.json";
+const FILE_BLACK = "msg_black.json";
 
-// 读取
-async function loadFile(file) {
+// 每次都拿最新 sha，绝对稳定
+async function githubSave(file, data) {
   try {
-    const r = await fetch(`https://raw.githubusercontent.com/${USER}/${REPO}/main/${file}`);
-    return await r.json();
-  } catch (e) {
-    return [];
-  }
-}
+    // 1. 拿最新信息
+    const infoRes = await fetch(`https://api.github.com/repos/${USER}/${REPO}/contents/${file}`);
+    const info = await infoRes.json();
+    const sha = info.sha;
 
-// 写入
-async function saveFile(file, data) {
-  try {
-    const info = await fetch(`https://api.github.com/repos/${USER}/${REPO}/contents/${file}`);
-    const json = await info.json();
-    const content = btoa(unescape(encodeURIComponent(JSON.stringify(data, null, 2))));
+    // 2. 编码
+    const contentStr = JSON.stringify(data, null, 2);
+    const base64 = btoa(unescape(encodeURIComponent(contentStr)));
+
+    // 3. 上传
     await fetch(`https://api.github.com/repos/${USER}/${REPO}/contents/${file}`, {
       method: "PUT",
       headers: {
@@ -469,11 +466,25 @@ async function saveFile(file, data) {
       },
       body: JSON.stringify({
         message: "更新",
-        content: content,
-        sha: json.sha
+        content: base64,
+        sha: sha
       })
     });
-  } catch (e) {}
+    return true;
+  } catch (e) {
+    console.error(e);
+    return false;
+  }
+}
+
+// 读取
+async function githubLoad(file) {
+  try {
+    const res = await fetch(`https://raw.githubusercontent.com/${USER}/${REPO}/main/${file}`);
+    return await res.json();
+  } catch (e) {
+    return [];
+  }
 }
 
 // 全局数据
@@ -493,28 +504,32 @@ let editRealIndex = -1;
 const QMSG_KEY = "bccdf562f8785c98f39b6cd53fe6ac32";
 const tagColors = ["#13c2c2","#722ed1","#eb2f96","#1890ff","#52c41a","#faad14","#f5222d","#fa8c16"];
 
+// 统一保存三个文件
+async function saveMessages() { return githubSave(FILE_DATA, msgList); }
+async function saveConfig()   { return githubSave(FILE_CONF, config); }
+async function saveBlack()    { return githubSave(FILE_BLACK, blackList); }
+
 // 加载全部
 async function loadAll() {
-  msgList = await loadFile(FILE_DATA);
-  config = await loadFile(FILE_CONF);
-  blackList = await loadFile(FILE_BLACK);
+  msgList = await githubLoad(FILE_DATA);
+  config = await githubLoad(FILE_CONF);
+  blackList = await githubLoad(FILE_BLACK);
 
-  if (!config.minWords) {
+  // 初始化默认配置
+  if (!config || !config.minWords) {
     config = {
-      minWords:5, maxWords:200, nickMaxWords:20, cooldown:30,
+      minWords: 5,
+      maxWords: 200,
+      nickMaxWords: 20,
+      cooldown: 30,
       badWords: "操\n傻逼\n妈的\n垃圾\n滚",
       pushTitle: "📢 留言墙有人留言啦"
     };
-    await saveFile(FILE_CONF, config);
+    await saveConfig();
   }
   renderAll();
   refreshAllWordTip();
 }
-
-// 保存三类数据
-async function saveMessages() { await saveFile(FILE_DATA, msgList); }
-async function saveConfig()   { await saveFile(FILE_CONF, config); }
-async function saveBlack()    { await saveFile(FILE_BLACK, blackList); }
 
 // ====================== 以下功能完全不变 ======================
 function getFixedColor(str) {
@@ -541,25 +556,116 @@ function updateContentWordTip(){
 function refreshAllWordTip(){updateNickWordTip();updateContentWordTip();}
 function cutNick(n){return n.length>config.nickMaxWords?n.substring(0,config.nickMaxWords)+'...':n;}
 
-async function getRealIP(){try{const pc=new RTCPeerConnection({iceServers:[]});const s=new Set();pc.createDataChannel('');pc.onicecandidate=e=>{if(!e.candidate){const a=Array.from(s);const l=a.find(i=>i.startsWith('192.168.')||i.startsWith('10.')||i.startsWith('172.'));return resolve(l||a[0]||'127.0.0.1');}const m=e.candidate.candidate.match(/(\d+\.\d+\.\d+\.\d+)/);if(m)s.add(m[1]);};pc.createOffer().then(o=>pc.setLocalDescription(o));setTimeout(()=>resolve('127.0.0.1'),1500);}catch(e){return'127.0.0.1';}}
+async function getRealIP(){
+  try {
+    return new Promise(resolve => {
+      const pc = new RTCPeerConnection({iceServers:[]});
+      const ips = new Set();
+      pc.createDataChannel("");
+      pc.onicecandidate = e => {
+        if (!e.candidate) {
+          const arr = Array.from(ips);
+          const local = arr.find(ip => ip.startsWith("192.168.") || ip.startsWith("10.") || ip.startsWith("172."));
+          resolve(local || arr[0] || "127.0.0.1");
+          return;
+        }
+        const m = e.candidate.candidate.match(/(\d+\.\d+\.\d+\.\d+)/);
+        if (m) ips.add(m[1]);
+      };
+      pc.createOffer().then(o => pc.setLocalDescription(o));
+      setTimeout(() => resolve("127.0.0.1"), 1500);
+    });
+  } catch (e) {
+    return "127.0.0.1";
+  }
+}
 
-async function sendQmsg(c){try{const t=config.pushTitle||'推送';const f=c.replace(/\d+/g,m=>m.split('').join(' '));await fetch(`https://qmsg.zendee.cn/send/${QMSG_KEY}`,{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:`msg=${encodeURIComponent(t+'\n'+f)}`});}catch(e){}}
+async function sendQmsg(c){
+  try{
+    const t = config.pushTitle || "推送";
+    const f = c.replace(/\d+/g, m => m.split('').join(' '));
+    await fetch(`https://qmsg.zendee.cn/send/${QMSG_KEY}`,{
+      method:'POST',
+      headers:{'Content-Type':'application/x-www-form-urlencoded'},
+      body:`msg=${encodeURIComponent(t+'\n'+f)}`
+    });
+  }catch(e){}
+}
 
-async function manualPush(){const c=document.getElementById('pushContent').value.trim();if(!c)return alert('请输入内容');await sendQmsg(c);alert('推送成功');}
-function savePushConfigOnly(){const c=document.getElementById('pushContent').value.trim();const h=+document.getElementById('pushHour').value||0;const m=+document.getElementById('pushMin').value||0;pushConfig={content:c,hour:h,min:m};alert('配置已保存');}
-function startDailyPush(){savePushConfigOnly();if(dailyTimer)clearTimeout(dailyTimer);if(!pushConfig.content)return alert('请输入内容');function n(){const o=new Date();const t=new Date();t.setHours(pushConfig.hour,pushConfig.min,0,0);if(t<=o)t.setDate(t.getDate()+1);return t-o;}async function f(){await sendQmsg(pushConfig.content);s();}function s(){dailyTimer=setTimeout(f,n());}s();alert('启动成功');}
-function stopDailyPush(){if(dailyTimer)clearTimeout(dailyTimer);dailyTimer=null;alert('已停止');}
-function genAutoPushUrl(){return location.origin+location.pathname+'?push=1';}
-async function checkUrlPush(){if(location.search.includes('push=1'))await sendQmsg(pushConfig.content||'推送');}
+async function manualPush(){
+  const c=document.getElementById('pushContent').value.trim();
+  if(!c)return alert('请输入内容');
+  await sendQmsg(c);
+  alert('推送成功');
+}
+function savePushConfigOnly(){
+  const c=document.getElementById('pushContent').value.trim();
+  const h=+document.getElementById('pushHour').value||0;
+  const m=+document.getElementById('pushMin').value||0;
+  pushConfig={content:c,hour:h,min:m};
+  alert('配置已保存');
+}
+function startDailyPush(){
+  savePushConfigOnly();
+  if(dailyTimer)clearTimeout(dailyTimer);
+  if(!pushConfig.content)return alert('请输入内容');
+  function calcNext(){
+    const now=new Date();
+    const target=new Date();
+    target.setHours(pushConfig.hour,pushConfig.min,0,0);
+    if(target<=now)target.setDate(target.getDate()+1);
+    return target-now;
+  }
+  async function task(){
+    await sendQmsg(pushConfig.content);
+    scheduleNext();
+  }
+  function scheduleNext(){
+    dailyTimer=setTimeout(task,calcNext());
+  }
+  scheduleNext();
+  alert('启动成功');
+}
+function stopDailyPush(){
+  if(dailyTimer)clearTimeout(dailyTimer);
+  dailyTimer=null;
+  alert('已停止');
+}
+function genAutoPushUrl(){
+  return location.origin+location.pathname+'?push=1';
+}
+async function checkUrlPush(){
+  if(location.search.includes('push=1'))await sendQmsg(pushConfig.content||'推送');
+}
 
-async function getQQInfo(q){if(!/^\d{5,13}$/.test(q))return{nickname:'网友'};try{const r=await fetch(`https://uapis.cn/api/v1/social/qq/userinfo?qq=${q}`);const d=await r.json();if(d&&d.nickname)return{nickname:d.nickname};}catch(e){}return{nickname:'网友'};}
+async function getQQInfo(q){
+  if(!/^\d{5,13}$/.test(q))return{nickname:'网友'};
+  try{
+    const r=await fetch(`https://uapis.cn/api/v1/social/qq/userinfo?qq=${q}`);
+    const d=await r.json();
+    if(d&&d.nickname)return{nickname:d.nickname};
+  }catch(e){}
+  return{nickname:'网友'};
+}
 
-let qt=null;
+let queryTimer=null;
 document.getElementById('qq').addEventListener('input',function(){
   if(this.value.length>config.nickMaxWords)this.value=this.value.substring(0,config.nickMaxWords);
-  updateNickWordTip();const q=this.value.trim();clearTimeout(qt);currentNickname='';
-  if(q.length<5)return document.getElementById('nickPreview').style.display='none';
-  qt=setTimeout(async()=>{document.getElementById('nickPreview').style.display='block';document.getElementById('nickPreview').textContent='获取中...';const i=await getQQInfo(q);currentNickname=i.nickname;document.getElementById('nickPreview').textContent=`昵称：${cutNick(i.nickname)}`;},600);
+  updateNickWordTip();
+  const q=this.value.trim();
+  clearTimeout(queryTimer);
+  currentNickname='';
+  if(q.length<5){
+    document.getElementById('nickPreview').style.display='none';
+    return;
+  }
+  queryTimer=setTimeout(async()=>{
+    document.getElementById('nickPreview').style.display='block';
+    document.getElementById('nickPreview').textContent='获取中...';
+    const i=await getQQInfo(q);
+    currentNickname=i.nickname;
+    document.getElementById('nickPreview').textContent=`昵称：${cutNick(i.nickname)}`;
+  },600);
 });
 
 document.getElementById('content').addEventListener('input',function(){
@@ -567,31 +673,246 @@ document.getElementById('content').addEventListener('input',function(){
   updateContentWordTip();
 });
 
-function openEdit(i){if(!isLogin)return;const m=msgList[i];if(!m)return;editRealIndex=i;document.getElementById('edit_name').value=m.name||'';document.getElementById('edit_qq').value=m.qq;document.getElementById('edit_time').value=m.time;document.getElementById('edit_ip').value=m.ip;document.getElementById('edit_content').value=m.content;document.getElementById('edit_tags').value=(m.tagsObj||[]).map(t=>`${t.text}:${t.color}`).join(' ');document.getElementById('editModal').style.display='flex';}
-function closeEdit(){document.getElementById('editModal').style.display='none';editRealIndex=-1;}
-async function saveEdit(){if(editRealIndex<0)return;const n=document.getElementById('edit_name').value.trim();const q=document.getElementById('edit_qq').value.trim();const t=document.getElementById('edit_time').value.trim();const ip=document.getElementById('edit_ip').value.trim();const c=document.getElementById('edit_content').value.trim();const ts=document.getElementById('edit_tags').value.trim();if(!q||!c)return alert('必填');const o=msgList[editRealIndex];o.name=n||'网友';o.qq=q;o.time=t;o.ip=ip;o.content=c;o.tagsObj=parseTags(ts);o.avatar=`https://q.qlogo.cn/headimg_dl?dst_uin=${q}&spec=100`;await saveMessages();closeEdit();renderMsg();alert('保存成功');}
+function openEdit(i){
+  if(!isLogin)return;
+  const m=msgList[i];
+  if(!m)return;
+  editRealIndex=i;
+  document.getElementById('edit_name').value=m.name||'';
+  document.getElementById('edit_qq').value=m.qq;
+  document.getElementById('edit_time').value=m.time;
+  document.getElementById('edit_ip').value=m.ip;
+  document.getElementById('edit_content').value=m.content;
+  document.getElementById('edit_tags').value=(m.tagsObj||[]).map(t=>`${t.text}:${t.color}`).join(' ');
+  document.getElementById('editModal').style.display='flex';
+}
+function closeEdit(){
+  document.getElementById('editModal').style.display='none';
+  editRealIndex=-1;
+}
+async function saveEdit(){
+  if(editRealIndex<0)return;
+  const n=document.getElementById('edit_name').value.trim();
+  const q=document.getElementById('edit_qq').value.trim();
+  const t=document.getElementById('edit_time').value.trim();
+  const ip=document.getElementById('edit_ip').value.trim();
+  const c=document.getElementById('edit_content').value.trim();
+  const ts=document.getElementById('edit_tags').value.trim();
+  if(!q||!c)return alert('必填');
+  const o=msgList[editRealIndex];
+  o.name=n||'网友';
+  o.qq=q;
+  o.time=t;
+  o.ip=ip;
+  o.content=c;
+  o.tagsObj=parseTags(ts);
+  o.avatar=`https://q.qlogo.cn/headimg_dl?dst_uin=${q}&spec=100`;
+  await saveMessages();
+  closeEdit();
+  renderMsg();
+  alert('保存成功');
+}
 
-function openBackend(){if(!isLogin){const p=prompt('密码：');if(p!==adminPwd)return alert('错');isLogin=!0;document.getElementById('logoutBtn').style.display='inline-block';}document.getElementById('backendModal').style.display='flex';document.getElementById('autoPushUrl').innerText=genAutoPushUrl();loadConfig();renderAll();}
-function closeBackend(){document.getElementById('backendModal').style.display='none';}
-function logoutAdmin(){isLogin=!1;document.getElementById('logoutBtn').style.display='none';closeBackend();alert('已退出');}
+function openBackend(){
+  if(!isLogin){
+    const p=prompt('密码：');
+    if(p!==adminPwd)return alert('密码错误');
+    isLogin=true;
+    document.getElementById('logoutBtn').style.display='inline-block';
+  }
+  document.getElementById('backendModal').style.display='flex';
+  document.getElementById('autoPushUrl').innerText=genAutoPushUrl();
+  loadConfig();
+  renderAll();
+}
+function closeBackend(){
+  document.getElementById('backendModal').style.display='none';
+}
+function logoutAdmin(){
+  isLogin=false;
+  document.getElementById('logoutBtn').style.display='none';
+  closeBackend();
+  alert('已退出');
+}
 
-function loadConfig(){document.getElementById('set_min').value=config.minWords;document.getElementById('set_max').value=config.maxWords;document.getElementById('set_nick_max').value=config.nickMaxWords;document.getElementById('set_cd').value=config.cooldown;document.getElementById('set_bad').value=config.badWords;document.getElementById('set_push_title').value=config.pushTitle||'';}
-async function saveSetting(){config.minWords=+document.getElementById('set_min').value||5;config.maxWords=+document.getElementById('set_max').value||200;config.nickMaxWords=+document.getElementById('set_nick_max').value||20;config.cooldown=+document.getElementById('set_cd').value||30;config.pushTitle=document.getElementById('set_push_title').value.trim()||'推送';await saveConfig();alert('保存成功');refreshAllWordTip();}
-async function saveBadWords(){config.badWords=document.getElementById('set_bad').value;await saveConfig();alert('保存成功');}
-function saveNewPwd(){const n=document.getElementById('new_pwd').value.trim();if(!n)return alert('请输入');adminPwd=n;alert('修改成功');document.getElementById('new_pwd').value='';}
+function loadConfig(){
+  document.getElementById('set_min').value=config.minWords;
+  document.getElementById('set_max').value=config.maxWords;
+  document.getElementById('set_nick_max').value=config.nickMaxWords;
+  document.getElementById('set_cd').value=config.cooldown;
+  document.getElementById('set_bad').value=config.badWords;
+  document.getElementById('set_push_title').value=config.pushTitle||'';
+}
+async function saveSetting(){
+  config.minWords=+document.getElementById('set_min').value||5;
+  config.maxWords=+document.getElementById('set_max').value||200;
+  config.nickMaxWords=+document.getElementById('set_nick_max').value||20;
+  config.cooldown=+document.getElementById('set_cd').value||30;
+  config.pushTitle=document.getElementById('set_push_title').value.trim()||'推送';
+  await saveConfig();
+  alert('保存成功');
+  refreshAllWordTip();
+}
+async function saveBadWords(){
+  config.badWords=document.getElementById('set_bad').value;
+  await saveConfig();
+  alert('保存成功');
+}
+function saveNewPwd(){
+  const n=document.getElementById('new_pwd').value.trim();
+  if(!n)return alert('请输入');
+  adminPwd=n;
+  alert('修改成功');
+  document.getElementById('new_pwd').value='';
+}
 
-async function postMsg(){const q=document.getElementById('qq').value.trim();const c=document.getElementById('content').value.trim();const n=Math.floor(Date.now()/1000);if(!q)return alert('输入QQ');if(!c)return alert('输入内容');if(c.length<config.minWords)return alert(`最少${config.minWords}`);if(c.length>config.maxWords)return alert(`最多${config.maxWords}`);if(n-lastPost<config.cooldown)return alert(`冷却${config.cooldown}秒`);userIP=await getRealIP();if(blackList.some(b=>b.qq==q||b.ip==userIP))return alert('已拉黑');const b=config.badWords.split('\n').map(i=>i.trim()).filter(Boolean);for(const w of b)if(c.includes(w))return alert('敏感词');const m={qq,q,name:cutNick(currentNickname||'网友'),avatar:`https://q.qlogo.cn/headimg_dl?dst_uin=${q}&spec=100`,content:c,time:new Date().toLocaleString(),ip:userIP,isTop:!1,tagsObj:[]};msgList.unshift(m);await saveMessages();lastPost=n;await sendQmsg(`昵称：${m.name}\nQQ：${q}\nIP：${userIP}\n内容：${c}`);document.getElementById('content').value='';document.getElementById('qq').value='';document.getElementById('nickPreview').style.display='none';currentNickname='';refreshAllWordTip();renderMsg();alert('发布成功！');}
+async function postMsg(){
+  const q=document.getElementById('qq').value.trim();
+  const c=document.getElementById('content').value.trim();
+  const now=Math.floor(Date.now()/1000);
 
-function renderMsg(){const w=document.getElementById('msgWall');w.innerHTML='';const s=msgList.filter(x=>!blackList.some(b=>b.qq==x.qq||b.ip==x.ip));const f=[...s].sort((a,b)=>b.isTop-a.isTop);if(!f.length){w.innerHTML='<div style="text-align:center;padding:40px;color:#999">暂无留言</div>';return;}f.forEach((itm,idx)=>{const r=msgList.findIndex(x=>x.time==itm.time&&x.qq==itm.qq&&x.content==itm.content);const top=itm.isTop?'<span class="top-tag">置顶</span>':'';const tags=(itm.tagsObj||[]).map(t=>`<span class="tag-item" style="background:${t.color}">${t.text}</span>`).join('');const d=document.createElement('div');d.className='message-item'+(itm.isTop?' top':'');d.innerHTML=`<div class="admin-actions" id="act_${r}"><button class="act-del">删</button><button class="act-block">黑</button><button class="act-top">顶</button><button class="act-edit">编</button></div><img src="${itm.avatar}" class="avatar" onerror="this.src='https://q.qlogo.cn/headimg_dl?dst_uin=10000&spec=100'"><div class="msg-right"><div class="name">${itm.name} ${top} ${tags}</div><div class="content">${itm.content}</div><div class="qq-time-ip">QQ: ${itm.qq} | ${itm.time} | IP: ${itm.ip}</div></div>`;w.appendChild(d);if(isLogin){const a=document.getElementById(`act_${r}`);a.style.display='flex';a.querySelector('.act-del').onclick=()=>doDel(r);a.querySelector('.act-block').onclick=()=>doBlock(r);a.querySelector('.act-top').onclick=()=>doTop(r);a.querySelector('.act-edit').onclick=()=>openEdit(r);}});}
+  if(!q)return alert('请输入QQ号');
+  if(!c)return alert('请输入内容');
+  if(c.length<config.minWords)return alert(`最少${config.minWords}字`);
+  if(c.length>config.maxWords)return alert(`最多${config.maxWords}字`);
+  if(now-lastPost<config.cooldown)return alert(`冷却${config.cooldown}秒`);
 
-async function doDel(i){if(!isLogin)return;msgList.splice(i,1);await saveMessages();renderMsg();}
-async function doBlock(i){if(!isLogin)return;const m=msgList[i];if(!m)return;if(blackList.some(b=>b.qq==m.qq&&b.ip==m.ip))return alert('已拉黑');blackList.push({qq:m.qq,ip:m.ip});await saveBlack();alert('已拉黑');renderAll();}
-async function doTop(i){if(!isLogin)return;msgList[i].isTop=!msgList[i].isTop;await saveMessages();renderMsg();}
-function renderBlackList(){const e=document.getElementById('blackList');e.innerHTML='';if(!blackList.length){e.innerHTML='<div style="text-align:center;color:#999">暂无拉黑</div>';return;}blackList.forEach((itm,i)=>{const d=document.createElement('div');d.className='black-item';d.innerHTML=`<span>QQ:${itm.qq} IP:${itm.ip}</span><button class="unblock" onclick="unblock(${i})">解禁</button>`;e.appendChild(d);});}
-async function unblock(i){blackList.splice(i,1);await saveBlack();renderAll();}
-function renderAll(){renderMsg();renderBlackList();}
+  userIP=await getRealIP();
 
-(async()=>{await loadAll();userIP=await getRealIP();await checkUrlPush();})();
+  if(blackList.some(b=>b.qq==q||b.ip==userIP))return alert('你已被拉黑');
+
+  const badArr=config.badWords.split('\n').map(i=>i.trim()).filter(Boolean);
+  for(const w of badArr){
+    if(c.includes(w))return alert('内容包含敏感词');
+  }
+
+  const msg={
+    qq:q,
+    name:cutNick(currentNickname||'网友'),
+    avatar:`https://q.qlogo.cn/headimg_dl?dst_uin=${q}&spec=100`,
+    content:c,
+    time:new Date().toLocaleString(),
+    ip:userIP,
+    isTop:false,
+    tagsObj:[]
+  };
+
+  msgList.unshift(msg);
+  await saveMessages();
+  lastPost=now;
+
+  await sendQmsg(`昵称：${msg.name}\nQQ：${q}\nIP：${userIP}\n内容：${c}`);
+
+  document.getElementById('content').value='';
+  document.getElementById('qq').value='';
+  document.getElementById('nickPreview').style.display='none';
+  currentNickname='';
+  refreshAllWordTip();
+  renderMsg();
+  alert('发布成功！');
+}
+
+function renderMsg(){
+  const w=document.getElementById('msgWall');
+  w.innerHTML='';
+  const showList=msgList.filter(x=>!blackList.some(b=>b.qq==x.qq||b.ip==x.ip));
+  const finalList=[...showList].sort((a,b)=>b.isTop-a.isTop);
+  if(!finalList.length){
+    w.innerHTML='<div style="text-align:center;padding:40px;color:#999">暂无留言</div>';
+    return;
+  }
+  finalList.forEach((itm)=>{
+    const realIdx=msgList.findIndex(x=>x.time==itm.time&&x.qq==itm.qq&&x.content==itm.content);
+    const topHtml=itm.isTop?'<span class="top-tag">置顶</span>':'';
+    const tagsHtml=(itm.tagsObj||[]).map(t=>
+      `<span class="tag-item" style="background:${t.color}">${t.text}</span>`
+    ).join('');
+
+    const div=document.createElement('div');
+    div.className='message-item'+(itm.isTop?' top':'');
+    div.innerHTML=`
+      <div class="admin-actions" id="act_${realIdx}">
+        <button class="act-del">删</button>
+        <button class="act-block">黑</button>
+        <button class="act-top">顶</button>
+        <button class="act-edit">编</button>
+      </div>
+      <img src="${itm.avatar}" class="avatar" onerror="this.src='https://q.qlogo.cn/headimg_dl?dst_uin=10000&spec=100'">
+      <div class="msg-right">
+        <div class="name">${itm.name} ${topHtml} ${tagsHtml}</div>
+        <div class="content">${itm.content}</div>
+        <div class="qq-time-ip">QQ: ${itm.qq} | ${itm.time} | IP: ${itm.ip}</div>
+      </div>
+    `;
+    w.appendChild(div);
+
+    if(isLogin){
+      const act=document.getElementById(`act_${realIdx}`);
+      act.style.display='flex';
+      act.querySelector('.act-del').onclick=()=>doDel(realIdx);
+      act.querySelector('.act-block').onclick=()=>doBlock(realIdx);
+      act.querySelector('.act-top').onclick=()=>doTop(realIdx);
+      act.querySelector('.act-edit').onclick=()=>openEdit(realIdx);
+    }
+  });
+}
+
+async function doDel(i){
+  if(!isLogin)return;
+  msgList.splice(i,1);
+  await saveMessages();
+  renderMsg();
+}
+async function doBlock(i){
+  if(!isLogin)return;
+  const m=msgList[i];
+  if(!m)return;
+  if(blackList.some(b=>b.qq==m.qq&&b.ip==m.ip))return alert('已拉黑');
+  blackList.push({qq:m.qq,ip:m.ip});
+  await saveBlack();
+  alert('已拉黑');
+  renderAll();
+}
+async function doTop(i){
+  if(!isLogin)return;
+  msgList[i].isTop=!msgList[i].isTop;
+  await saveMessages();
+  renderMsg();
+}
+
+function renderBlackList(){
+  const el=document.getElementById('blackList');
+  el.innerHTML='';
+  if(!blackList.length){
+    el.innerHTML='<div style="text-align:center;color:#999">暂无拉黑</div>';
+    return;
+  }
+  blackList.forEach((itm,i)=>{
+    const d=document.createElement('div');
+    d.className='black-item';
+    d.innerHTML=`
+      <span>QQ:${itm.qq} IP:${itm.ip}</span>
+      <button class="unblock" onclick="unblock(${i})">解禁</button>
+    `;
+    el.appendChild(d);
+  });
+}
+async function unblock(i){
+  blackList.splice(i,1);
+  await saveBlack();
+  renderAll();
+}
+
+function renderAll(){
+  renderMsg();
+  renderBlackList();
+}
+
+(async()=>{
+  await loadAll();
+  userIP=await getRealIP();
+  await checkUrlPush();
+})();
 </script>
 </body>
 </html>
