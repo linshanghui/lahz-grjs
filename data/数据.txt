@@ -1,0 +1,5 @@
+data/messages.json （留言）
+​
+-  data/config.json （设置）
+​
+-  data/blacklist.json （黑名单）
