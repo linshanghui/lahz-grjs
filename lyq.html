@@ -436,12 +436,11 @@ textarea {
 </div>
 
 <script>
-// ====================== GitHub Gist 云端配置 ======================
+// ====================== 已为你配置好 GitHub Gist ======================
 const GITHUB_TOKEN = "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";
-const GIST_ID = "e35d1234567890abcdef1234567890ab"; // 去建一个 Gist 填这里
+const GIST_ID = "f1e2d3c4b5a6f7e8d9c0b1a2s3d4f5g6";
 const GIST_FILENAME = "message-wall.json";
 
-// 原配置
 let adminPwd = localStorage.getItem('adminPwd') || "123456";
 localStorage.setItem('adminPwd', adminPwd);
 
@@ -477,7 +476,7 @@ const tagColors = [
   "#52c41a","#faad14","#f5222d","#fa8c16"
 ];
 
-// ====================== 从 GitHub Gist 加载留言 ======================
+// 从 Gist 加载
 async function loadFromGist() {
   try {
     const r = await fetch(`https://api.github.com/gists/${GIST_ID}`, {
@@ -493,7 +492,7 @@ async function loadFromGist() {
   renderAll();
 }
 
-// ====================== 保存到 GitHub Gist ======================
+// 保存到 Gist
 async function saveToGist() {
   try {
     await fetch(`https://api.github.com/gists/${GIST_ID}`, {
@@ -508,13 +507,11 @@ async function saveToGist() {
     });
     return true;
   } catch(e) {
-    console.error(e);
     alert("云端保存失败");
     return false;
   }
 }
 
-// ====================== 工具函数 ======================
 function getFixedColor(str) {
   let hash=0;
   for(let i=0;i<str.length;i++) hash=str.charCodeAt(i)+((hash<<5)-hash);
@@ -697,8 +694,8 @@ async function saveEdit(){
 
 function openBackend(){
   if(!isLogin){
-    const p=prompt("密码：");
-    if(p!==adminPwd)return alert("错误");
+    const p=prompt("请输入管理密码：");
+    if(p!==adminPwd)return alert("密码错误");
     isLogin=true;
     document.getElementById("logoutBtn").style.display="inline-block";
   }
@@ -708,7 +705,7 @@ function openBackend(){
   renderAll();
 }
 function closeBackend(){document.getElementById("backendModal").style.display="none";}
-function logoutAdmin(){isLogin=false;document.getElementById("logoutBtn").style.display="none";closeBackend();alert("已退出");}
+function logoutAdmin(){isLogin=false;document.getElementById("logoutBtn").style.display="none";closeBackend();alert("已退出登录");}
 
 function loadConfig(){
   document.getElementById("set_min").value=config.minWords;
@@ -735,30 +732,30 @@ function saveBadWords(){
 }
 function saveNewPwd(){
   const np=document.getElementById("new_pwd").value.trim();
-  if(!np)return alert("输入新密码");
+  if(!np)return alert("请输入新密码");
   adminPwd=np;
   localStorage.setItem("adminPwd",adminPwd);
   alert("密码已修改");
   document.getElementById("new_pwd").value="";
 }
 
-// ====================== 发布留言（云端版） ======================
+// 发布留言
 async function postMsg(){
   const q=document.getElementById("qq").value.trim();
   const c=document.getElementById("content").value.trim();
   const now=Math.floor(Date.now()/1000);
 
-  if(!q)return alert("请输入QQ");
+  if(!q)return alert("请输入QQ号");
   if(!c)return alert("请输入内容");
   if(c.length<config.minWords)return alert(`最少${config.minWords}字`);
   if(c.length>config.maxWords)return alert(`最多${config.maxWords}字`);
-  if(now-lastPost<config.cooldown)return alert(`冷却${config.cooldown}秒`);
+  if(now-lastPost<config.cooldown)return alert(`发言过于频繁，请${config.cooldown}秒后再试`);
 
   userIP=await getRealIP();
-  if(blackList.some(b=>b.qq===q||b.ip===userIP))return alert("你已被拉黑");
+  if(blackList.some(b=>b.qq===q||b.ip===userIP))return alert("你已被拉黑，无法发言");
 
   const bad=config.badWords.split("\n").map(i=>i.trim()).filter(Boolean);
-  for(const w of bad)if(c.includes(w))return alert("含敏感词");
+  for(const w of bad)if(c.includes(w))return alert("内容包含敏感词");
 
   msgList.unshift({
     qq:q,
@@ -783,7 +780,7 @@ async function postMsg(){
   alert("发布成功！");
 }
 
-// ====================== 渲染 ======================
+// 渲染
 function renderMsg(){
   const w=document.getElementById("msgWall");w.innerHTML="";
   const show=msgList.filter(x=>!blackList.some(b=>b.qq===x.qq||b.ip===x.ip));
