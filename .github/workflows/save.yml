@@ -1,10 +1,8 @@
-name: 保存数据到JSON
-on:
-  repository_dispatch:
-    types: [save_data]
+name: Test Save
+on: workflow_dispatch
 
 jobs:
-  write:
+  test:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -12,17 +10,14 @@ jobs:
           token: ${{ secrets.TOKEN }}
           ref: main
 
-      - name: 写入文件
+      - name: 写入测试配置
         run: |
-          cat > '${{ github.event.client_payload.file }}' << 'EOF'
-          ${{ github.event.client_payload.data }}
-          EOF
+          echo '{"minWords": 999}' > test_config.json
 
-      - name: 提交并推送（关键：跳过 Pages 构建）
+      - name: 提交并推送
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@noreply.github.com"
-          git add .
-          # 提交信息加 [skip ci]，GitHub 就不会触发 Pages 构建
-          git commit -m "自动保存数据 [skip ci]"
+          git add test_config.json
+          git commit -m "测试保存 [skip ci]"
           git push origin main
