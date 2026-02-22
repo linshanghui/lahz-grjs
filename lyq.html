@@ -436,17 +436,19 @@ textarea {
 </div>
 
 <script>
-// ====================== GitHub 配置 ======================
-const GH_TOKEN = "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";
+// ====================== GitHub 自动同步配置 ======================
+const GH_TOKEN = "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";
 const GH_OWNER = "linshanghui";
 const GH_REPO  = "lahz-grjs";
 const GH_BRANCH= "main";
 const GH_RAW = `https://raw.githubusercontent.com/${GH_OWNER}/${GH_REPO}/${GH_BRANCH}`;
 const GH_API = `https://api.github.com/repos/${GH_OWNER}/${GH_REPO}/contents`;
 
+// 本地缓存文件名（3个核心文件）
 const FILE_CONFIG = "msg_config.json";
 const FILE_DATA   = "msg_data.json";
 const FILE_BLACK  = "msg_black.json";
+// ===============================================================================
 
 let adminPwd = localStorage.getItem('adminPwd') || "123456";
 localStorage.setItem('adminPwd', adminPwd);
@@ -478,665 +480,79 @@ let editRealIndex = -1;
 const QMSG_KEY = "bccdf562f8785c98f39b6cd53fe6ac32";
 const tagColors = ["#13c2c2","#722ed1","#eb2f96","#1890ff","#52c41a","#faad14","#f5222d","#fa8c16"];
 
-// ====================== 修复版：真正能提交到 GitHub ======================
+// 从 GitHub 读取文件
+async function ghGet(file) {
+  try {
+    const r = await fetch(`${GH_RAW}/${file}`);
+    if (!r.ok) throw new Error(`拉取 ${file} 失败`);
+    const data = await r.json();
+    localStorage.setItem(file, JSON.stringify(data));
+    return data;
+  } catch(e) {
+    console.warn(`GitHub 拉取失败，使用本地缓存: ${file}`, e);
+    const local = localStorage.getItem(file);
+    return local ? JSON.parse(local) : (file === FILE_CONFIG ? {...defaultConfig} : []);
+  }
+}
+
+// 写入 GitHub
 async function ghPut(file, data) {
   try {
-    const jsonStr = JSON.stringify(data, null, 2);
-    const content = btoa(unescape(encodeURIComponent(jsonStr)));
+    const content = btoa(unescape(encodeURIComponent(JSON.stringify(data, null, 2))));
     const url = `${GH_API}/${file}`;
     let sha = null;
-
-    // 先获取 SHA
+    // 获取文件当前 SHA（用于覆盖）
     try {
-      const headRes = await fetch(url, {
-        headers: { authorization: `token ${GH_TOKEN}` }
+      const r = await fetch(url, {
+        headers: {
+          authorization: `token ${GH_TOKEN}`,
+          "Content-Type": "application/json"
+        }
       });
-      if (headRes.ok) {
-        const info = await headRes.json();
-        sha = info.sha;
+      if (r.ok) {
+        const j = await r.json();
+        sha = j.sha;
       }
-    } catch (e) {}
-
-    // 真正提交
-    const res = await fetch(url, {
+    } catch(e) {
+      console.warn(`获取 ${file} SHA 失败，尝试新建`, e);
+    }
+    // 发起 PUT 请求
+    const response = await fetch(url, {
       method: "PUT",
       headers: {
         authorization: `token ${GH_TOKEN}`,
         "Content-Type": "application/json"
       },
       body: JSON.stringify({
-        message: "update",
+        message: "自动同步留言墙数据",
         content: content,
         branch: GH_BRANCH,
         sha: sha
       })
     });
-
-    if (!res.ok) {
-      const err = await res.json();
-      console.error("GitHub 错误：", err);
-      alert("❌ 提交 GitHub 失败：" + (err.message || "权限错误"));
-      return false;
+    if (!response.ok) {
+      const err = await response.text();
+      console.error(`写入 ${file} 失败:`, err);
     }
-
-    localStorage.setItem(file, jsonStr);
-    return true;
-  } catch (e) {
-    console.error(e);
-    alert("❌ 网络异常，无法提交 GitHub");
-    return false;
+  } catch(e) {
+    console.error(`同步 GitHub 出错:`, e);
   }
+  // 本地缓存兜底
+  localStorage.setItem(file, JSON.stringify(data));
 }
 
-// 读取
-async function ghGet(file) {
-  try {
-    const r = await fetch(`${GH_RAW}/${file}`);
-    if (!r.ok) throw new Error("拉取失败");
-    const data = await r.json();
-    localStorage.setItem(file, JSON.stringify(data));
-    return data;
-  } catch (e) {
-    const local = localStorage.getItem(file);
-    return local ? JSON.parse(local) : (file === FILE_CONFIG ? {...defaultConfig} : []);
-  }
-}
-
+// 统一同步入口
 async function loadAllFromGitHub() {
   config    = await ghGet(FILE_CONFIG);
   msgList   = await ghGet(FILE_DATA);
   blackList = await ghGet(FILE_BLACK);
 }
-
 function syncConfigToGitHub() { return ghPut(FILE_CONFIG, config); }
 function syncDataToGitHub()   { return ghPut(FILE_DATA,   msgList); }
 function syncBlackToGitHub()  { return ghPut(FILE_BLACK, blackList); }
 
-// ====================== 推送配置保存（真正提交）======================
-async function savePushConfigOnly(){
-  const c = document.getElementById('pushContent').value.trim();
-  const h = parseInt(document.getElementById('pushHour').value) || 0;
-  const m = parseInt(document.getElementById('pushMin').value) || 0;
-  pushConfig = {content:c, hour:h, min:m};
-  localStorage.setItem('pushConfig', JSON.stringify(pushConfig));
+// ============================================================================
 
-  const ok = await syncConfigToGitHub();
-  if (ok) alert('✅ 推送配置已保存到 GitHub');
-}
-
-// ====================== 下面是原有功能，不动 ======================
-function getFixedColor(str) {
-  let h直接给你**能真正提交到 GitHub、失败会弹窗告诉你原因**的最终修复版，你**直接复制覆盖**，不用改任何东西。
-
-# 完整可正常提交 GitHub 代码（已修复）
-```html
-<!DOCTYPE html>
-<html lang="zh-CN">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>留言墙</title>
-<style>
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-}
-body {
-  background: #f7f7fa;
-  padding: 12px;
-  max-width: 600px;
-  margin: 0 auto;
-}
-.header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 16px;
-  gap: 8px;
-}
-.title {
-  font-size: 20px;
-  font-weight: 600;
-  color: #222;
-}
-.btn {
-  padding: 8px 12px;
-  border: none;
-  border-radius: 10px;
-  font-size: 14px;
-  font-weight: 500;
-  cursor: pointer;
-  white-space: nowrap;
-}
-.btn-primary {
-  background: #409eff;
-  color: #fff;
-}
-.btn-danger {
-  background: #f56756;
-  color: #fff;
-}
-
-.publish-card {
-  background: #fff;
-  border-radius: 16px;
-  padding: 16px;
-  margin-bottom: 16px;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.05);
-}
-.publish-card input,
-.publish-card textarea {
-  width: 100%;
-  padding: 12px 14px;
-  border: 1px solid #eee;
-  border-radius: 12px;
-  margin-bottom: 10px;
-  outline: none;
-  font-size: 15px;
-  background: #fafafa;
-  transition: border 0.2s;
-}
-.publish-card input:focus,
-.publish-card textarea:focus {
-  border-color: #409eff;
-}
-
-.nick-preview {
-  font-size: 13px;
-  color: #409eff;
-  margin: -5px 0 10px;
-  display: none;
-}
-.word-tip {
-  font-size: 13px;
-  color: #666;
-  margin: 0 0 10px;
-}
-
-.publish-card textarea {
-  min-height: 100px;
-  resize: none;
-}
-.publish-card button {
-  width: 100%;
-  padding: 12px;
-  background: #409eff;
-  color: #fff;
-  border: none;
-  border-radius: 12px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: opacity 0.2s;
-}
-.publish-card button:hover {
-  opacity: 0.9;
-}
-
-.message-wall {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-.message-item {
-  background: #fff;
-  border-radius: 16px;
-  padding: 14px;
-  position: relative;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
-  display: flex;
-  gap: 12px;
-}
-.message-item.top {
-  border: 1px solid #ffd43b;
-  background: #fffdf5;
-}
-.avatar {
-  width: 42px;
-  height: 42px;
-  border-radius: 50%;
-  object-fit: cover;
-  background: #eee;
-  flex-shrink: 0;
-}
-.msg-right {
-  flex: 1;
-}
-.name {
-  font-weight: 600;
-  font-size: 15px;
-  color: #222;
-  margin-bottom: 6px;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  flex-wrap: wrap;
-}
-.top-tag {
-  background: #FF7D00;
-  color: #fff;
-  font-size: 11px;
-  padding: 2px 6px;
-  border-radius: 4px;
-  font-weight: bold;
-}
-.tag-item {
-  font-size: 11px;
-  padding: 2px 6px;
-  border-radius: 4px;
-  font-weight: bold;
-  color: #fff;
-}
-.content {
-  font-size: 15px;
-  line-height: 1.5;
-  color: #333;
-  word-break: break-all;
-}
-.qq-time-ip {
-  font-size: 12px;
-  color: #999;
-  display: flex;
-  gap: 8px;
-  align-items: center;
-  flex-wrap: wrap;
-  margin-top: 8px;
-}
-
-.admin-actions {
-  position: absolute;
-  top: 10px;
-  right: 10px;
-  display: none;
-  gap: 4px;
-}
-.act-del { background: #f56756; width: 26px; height: 22px; font-size: 10px; border: none; border-radius: 4px; color: #fff; cursor: pointer; }
-.act-block { background: #ff9f43; width: 26px; height: 22px; font-size: 10px; border: none; border-radius: 4px; color: #fff; cursor: pointer; }
-.act-top { background: #409eff; width: 26px; height: 22px; font-size: 10px; border: none; border-radius: 4px; color: #fff; cursor: pointer; }
-.act-edit { background: #722ed1; width: 26px; height: 22px; font-size: 10px; border: none; border-radius: 4px; color: #fff; cursor: pointer; }
-
-.edit-modal {
-  position: fixed;
-  top: 0; left: 0;
-  width: 100%; height: 100%;
-  background: rgba(0,0,0,0.5);
-  display: none;
-  justify-content: center;
-  align-items: center;
-  z-index: 99999;
-}
-.edit-box {
-  background: #fff;
-  width: 90%;
-  max-width: 400px;
-  border-radius: 16px;
-  padding: 20px;
-}
-.edit-box h4 {
-  margin-bottom: 12px;
-  font-size: 16px;
-}
-.edit-box input, .edit-box textarea {
-  width: 100%;
-  padding: 10px;
-  margin-bottom: 10px;
-  border: 1px solid #eee;
-  border-radius: 8px;
-  outline: none;
-}
-.edit-btns {
-  display: flex;
-  gap: 10px;
-  margin-top: 10px;
-}
-.edit-btns button {
-  flex: 1;
-  padding: 10px;
-  border: none;
-  border-radius: 8px;
-  cursor: pointer;
-}
-.btn-save { background: #409eff; color: #fff; }
-.btn-cancel { background: #f1f1f1; color: #333; }
-
-.backend-modal {
-  position: fixed;
-  top: 0; left: 0;
-  width: 100%; height: 100%;
-  background: rgba(0,0,0,0.3);
-  display: none;
-  z-index: 9999;
-}
-.backend-box {
-  background: #fff;
-  width: 100%;
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-}
-.backend-header {
-  background: #409eff;
-  color: #fff;
-  padding: 16px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-.backend-close {
-  background: none; border: none;
-  color: #fff; font-size: 20px;
-  cursor: pointer;
-}
-.backend-body {
-  flex: 1;
-  padding: 16px;
-  overflow-y: auto;
-  background: #f7f7fa;
-}
-.section {
-  background: #fff;
-  border-radius: 14px;
-  padding: 16px;
-  margin-bottom: 14px;
-}
-.section h4 {
-  margin-bottom: 12px;
-  font-size: 16px;
-}
-.set-row {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  margin-bottom: 12px;
-}
-.set-row span {
-  font-size: 14px;
-  color: #555;
-}
-.set-row input {
-  padding: 10px 12px;
-  border: 1px solid #eee;
-  border-radius: 10px;
-  font-size: 15px;
-  background: #fafafa;
-}
-textarea {
-  width: 100%;
-  height: 100px;
-  padding: 12px;
-  border: 1px solid #eee;
-  border-radius: 10px;
-  font-size: 14px;
-  background: #fafafa;
-  resize: none;
-}
-.save-btn {
-  width: 100%;
-  padding: 11px;
-  background: #409eff;
-  color: #fff;
-  border: none;
-  border-radius: 10px;
-  margin-top: 6px;
-  cursor: pointer;
-}
-
-.black-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 10px 12px;
-  background: #fafafa;
-  border-radius: 10px;
-  margin-bottom: 8px;
-}
-.unblock {
-  background: #409eff;
-  color: #fff;
-  border: none;
-  padding: 5px 9px;
-  border-radius: 6px;
-  font-size: 12px;
-  cursor: pointer;
-}
-</style>
-</head>
-<body>
-
-<div class="header">
-  <div class="title">💬 留言墙</div>
-  <div style="display:flex;gap:6px;">
-    <button class="btn btn-primary" onclick="openBackend()">管理</button>
-    <button class="btn btn-danger" id="logoutBtn" style="display:none;" onclick="logoutAdmin()">退出登录</button>
-  </div>
-</div>
-
-<div class="publish-card">
-  <input id="qq" placeholder="请输入QQ号" autocomplete="off">
-  <div class="nick-preview" id="nickPreview">正在获取昵称...</div>
-  <div class="word-tip" id="nickWordTip"></div>
-
-  <textarea id="content" placeholder="想说点什么..."></textarea>
-  <div class="word-tip" id="contentWordTip"></div>
-
-  <button onclick="postMsg()">发布留言</button>
-</div>
-
-<div class="message-wall" id="msgWall"></div>
-
-<div class="edit-modal" id="editModal">
-  <div class="edit-box">
-    <h4>编辑留言</h4>
-    <input id="edit_name" placeholder="昵称">
-    <input id="edit_qq" placeholder="QQ">
-    <input id="edit_time" placeholder="时间">
-    <input id="edit_ip" placeholder="IP">
-    <textarea id="edit_content" rows="4" placeholder="内容"></textarea>
-    <input id="edit_tags" placeholder="格式：搞笑:#ff5722 日常:#1890ff">
-    <div class="edit-btns">
-      <button class="btn-cancel" onclick="closeEdit()">取消</button>
-      <button class="btn-save" onclick="saveEdit()">保存</button>
-    </div>
-  </div>
-</div>
-
-<div class="backend-modal" id="backendModal">
-  <div class="backend-box">
-    <div class="backend-header">
-      <h3>管理后台</h3>
-      <button class="backend-close" onclick="closeBackend()">×</button>
-    </div>
-    <div class="backend-body">
-      <div class="section">
-        <h4>基础设置</h4>
-        <div class="set-row"><span>最少字数</span><input id="set_min"></div>
-        <div class="set-row"><span>最多字数</span><input id="set_max"></div>
-        <div class="set-row"><span>昵称最大字数</span><input id="set_nick_max"></div>
-        <div class="set-row"><span>发言间隔(秒)</span><input id="set_cd"></div>
-        <div class="set-row"><span>推送标题</span><input id="set_push_title" placeholder="为空则使用默认标题"></div>
-        <button class="save-btn" onclick="saveSetting()">保存设置</button>
-      </div>
-
-      <div class="section" style="background:#e6f7ff;">
-        <h4>🔧 推送功能</h4>
-        <div class="set-row">
-          <span>推送内容</span>
-          <textarea id="pushContent" placeholder="请输入要推送的内容"></textarea>
-        </div>
-        <div class="set-row">
-          <button class="save-btn" style="background:#52c41a" onclick="manualPush()">立即手动推送</button>
-        </div>
-        <div style="display:flex;gap:8px;margin-top:8px;">
-          <div style="flex:1;">
-            <span>每日定点小时（0-23）</span>
-            <input type="number" id="pushHour" min="0" max="23">
-          </div>
-          <div style="flex:1;">
-            <span>每日定点分钟（0-59）</span>
-            <input type="number" id="pushMin" min="0" max="59">
-          </div>
-        </div>
-        <div style="display:flex;gap:6px;margin-top:8px;">
-          <button class="save-btn" style="background:#ff9f43;flex:1" onclick="startDailyPush()">启动每日推送</button>
-          <button class="save-btn" style="background:#f56756;flex:1" onclick="stopDailyPush()">停止每日推送</button>
-        </div>
-        <div style="margin-top:8px;">
-          <button class="save-btn" style="background:#722ed1;" onclick="savePushConfigOnly()">保存推送配置</button>
-        </div>
-        <div style="font-size:12px;color:#666;margin-top:8px;">
-          访问推送链接：<span id="autoPushUrl"></span>
-        </div>
-      </div>
-
-      <div class="section">
-        <h4>敏感词</h4>
-        <textarea id="set_bad"></textarea>
-        <button class="save-btn" onclick="saveBadWords()">保存敏感词</button>
-      </div>
-      <div class="section">
-        <h4>修改密码</h4>
-        <div class="set-row"><span>新密码</span><input id="new_pwd"></div>
-        <button class="save-btn" onclick="saveNewPwd()">保存密码</button>
-      </div>
-      <div class="section">
-        <h4>已拉黑</h4>
-        <div id="blackList"></div>
-      </div>
-    </div>
-  </div>
-</div>
-
-<script>
-// ====================== GitHub 配置 ======================
-const GH_TOKEN = "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";
-const GH_OWNER = "linshanghui";
-const GH_REPO  = "lahz-grjs";
-const GH_BRANCH= "main";
-const GH_RAW = `https://raw.githubusercontent.com/${GH_OWNER}/${GH_REPO}/${GH_BRANCH}`;
-const GH_API = `https://api.github.com/repos/${GH_OWNER}/${GH_REPO}/contents`;
-
-const FILE_CONFIG = "msg_config.json";
-const FILE_DATA   = "msg_data.json";
-const FILE_BLACK  = "msg_black.json";
-
-let adminPwd = localStorage.getItem('adminPwd') || "123456";
-localStorage.setItem('adminPwd', adminPwd);
-
-const defaultConfig = {
-  minWords: 5,
-  maxWords: 200,
-  nickMaxWords: 20,
-  cooldown: 30,
-  badWords: "操\n傻逼\n妈的\n垃圾\n滚",
-  pushTitle: "📢 留言墙有人留言啦"
-};
-
-let config    = {...defaultConfig};
-let msgList   = [];
-let blackList = [];
-
-let pushConfig = JSON.parse(localStorage.getItem('pushConfig')) || {
-  content: "", hour: 22, min: 23
-};
-
-let lastPost = 0;
-let isLogin = false;
-let userIP = "127.0.0.1";
-let currentNickname = "";
-let dailyTimer = null;
-let editRealIndex = -1;
-
-const QMSG_KEY = "bccdf562f8785c98f39b6cd53fe6ac32";
-const tagColors = ["#13c2c2","#722ed1","#eb2f96","#1890ff","#52c41a","#faad14","#f5222d","#fa8c16"];
-
-// ====================== 修复版：真正能提交到 GitHub ======================
-async function ghPut(file, data) {
-  try {
-    const jsonStr = JSON.stringify(data, null, 2);
-    const content = btoa(unescape(encodeURIComponent(jsonStr)));
-    const url = `${GH_API}/${file}`;
-    let sha = null;
-
-    // 先获取 SHA
-    try {
-      const headRes = await fetch(url, {
-        headers: { authorization: `token ${GH_TOKEN}` }
-      });
-      if (headRes.ok) {
-        const info = await headRes.json();
-        sha = info.sha;
-      }
-    } catch (e) {}
-
-    // 真正提交
-    const res = await fetch(url, {
-      method: "PUT",
-      headers: {
-        authorization: `token ${GH_TOKEN}`,
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        message: "update",
-        content: content,
-        branch: GH_BRANCH,
-        sha: sha
-      })
-    });
-
-    if (!res.ok) {
-      const err = await res.json();
-      console.error("GitHub 错误：", err);
-      alert("❌ 提交 GitHub 失败：" + (err.message || "权限错误"));
-      return false;
-    }
-
-    localStorage.setItem(file, jsonStr);
-    return true;
-  } catch (e) {
-    console.error(e);
-    alert("❌ 网络异常，无法提交 GitHub");
-    return false;
-  }
-}
-
-// 读取
-async function ghGet(file) {
-  try {
-    const r = await fetch(`${GH_RAW}/${file}`);
-    if (!r.ok) throw new Error("拉取失败");
-    const data = await r.json();
-    localStorage.setItem(file, JSON.stringify(data));
-    return data;
-  } catch (e) {
-    const local = localStorage.getItem(file);
-    return local ? JSON.parse(local) : (file === FILE_CONFIG ? {...defaultConfig} : []);
-  }
-}
-
-async function loadAllFromGitHub() {
-  config    = await ghGet(FILE_CONFIG);
-  msgList   = await ghGet(FILE_DATA);
-  blackList = await ghGet(FILE_BLACK);
-}
-
-function syncConfigToGitHub() { return ghPut(FILE_CONFIG, config); }
-function syncDataToGitHub()   { return ghPut(FILE_DATA,   msgList); }
-function syncBlackToGitHub()  { return ghPut(FILE_BLACK, blackList); }
-
-// ====================== 推送配置保存（真正提交）======================
-async function savePushConfigOnly(){
-  const c = document.getElementById('pushContent').value.trim();
-  const h = parseInt(document.getElementById('pushHour').value) || 0;
-  const m = parseInt(document.getElementById('pushMin').value) || 0;
-  pushConfig = {content:c, hour:h, min:m};
-  localStorage.setItem('pushConfig', JSON.stringify(pushConfig));
-
-  const ok = await syncConfigToGitHub();
-  if (ok) alert('✅ 推送配置已保存到 GitHub');
-}
-
-// ====================== 下面是原有功能，不动 ======================
 function getFixedColor(str) {
   let h=0; for(let i=0;i<str.length;i++)h=str.charCodeAt(i)+((h<<5)-h);
   return tagColors[Math.abs(h)%tagColors.length];
@@ -1160,6 +576,7 @@ function refreshAllWordTip(){updateNickWordTip();updateContentWordTip();}
 
 function cutNick(n){return n.length>config.nickMaxWords?n.substring(0,config.nickMaxWords)+"...":n;}
 
+// 内网 IP 获取
 async function getRealIP() {
   try{
     return new Promise(r=>{
@@ -1198,6 +615,14 @@ async function manualPush(){
   if(!c)return alert('请输入推送内容');
   await sendQmsg(c);
   alert('✅ 手动推送成功！');
+}
+function savePushConfigOnly(){
+  const c=document.getElementById('pushContent').value.trim();
+  const h=parseInt(document.getElementById('pushHour').value)||0;
+  const m=parseInt(document.getElementById('pushMin').value)||0;
+  pushConfig={content:c,hour:h,min:m};
+  localStorage.setItem('pushConfig',JSON.stringify(pushConfig));
+  alert('✅ 推送配置已保存');
 }
 
 function startDailyPush(){
@@ -1261,7 +686,7 @@ function openEdit(idx){
 }
 function closeEdit(){document.getElementById('editModal').style.display='none';editRealIndex=-1;}
 
-async function saveEdit(){
+function saveEdit(){
   if(editRealIndex===-1)return;
   const n=document.getElementById('edit_name').value.trim();
   const q=document.getElementById('edit_qq').value.trim();
@@ -1279,7 +704,7 @@ async function saveEdit(){
   it.content=c;
   it.tagsObj=tags;
   it.avatar=`https://q.qlogo.cn/headimg_dl?dst_uin=${q}&spec=100`;
-  await syncDataToGitHub();
+  syncDataToGitHub();
   closeEdit();
   renderMsg();
   alert('✅ 保存成功');
@@ -1309,19 +734,19 @@ function loadConfigToForm(){
   document.getElementById("set_push_title").value=config.pushTitle||"";
 }
 
-async function saveSetting(){
+function saveSetting(){
   config.minWords=+document.getElementById("set_min").value||5;
   config.maxWords=+document.getElementById("set_max").value||200;
   config.nickMaxWords=+document.getElementById("set_nick_max").value||20;
   config.cooldown=+document.getElementById("set_cd").value||30;
   config.pushTitle=document.getElementById("set_push_title").value.trim()||defaultConfig.pushTitle;
-  await syncConfigToGitHub();
+  syncConfigToGitHub();
   alert("保存成功");
   refreshAllWordTip();
 }
-async function saveBadWords(){
+function saveBadWords(){
   config.badWords=document.getElementById("set_bad").value;
-  await syncConfigToGitHub();
+  syncConfigToGitHub();
   alert("保存成功");
 }
 function saveNewPwd(){
@@ -1379,7 +804,7 @@ function renderMsg(){
   const show=msgList.filter(it=>!blackList.some(b=>b.qq===it.qq||b.ip===it.ip));
   const sorted=[...show].sort((a,b)=>b.isTop-a.isTop);
   if(!sorted.length){w.innerHTML=`<div style='text-align:center;padding:40px;color:#999'>暂无留言</div>`;return;}
-  sorted.forEach((it,i)=>{
+  sorted.forEach(it=>{
     const idx=msgList.findIndex(x=>x.time===it.time&&x.qq===it.qq&&x.content===it.content);
     const top=it.isTop?`<span class="top-tag">置顶</span>`:'';
     const tags=(it.tagsObj||[]).map(t=>`<span class="tag-item" style="background:${t.color}">${t.text}</span>`).join('');
@@ -1403,27 +828,17 @@ function renderMsg(){
     if(isLogin){
       const el=document.getElementById(`act_${idx}`);
       el.style.display="flex";
-      el.querySelector(".act-del").onclick=async ()=>{
-        if(!isLogin)return;
-        msgList.splice(idx,1);
-        await syncDataToGitHub();
-        renderMsg();
-      };
-      el.querySelector(".act-block").onclick=async ()=>{
+      el.querySelector(".act-del").onclick=()=>{if(!isLogin)return;msgList.splice(idx,1);syncDataToGitHub();renderMsg();};
+      el.querySelector(".act-block").onclick=()=>{
         if(!isLogin)return;
         const i=msgList[idx];if(!i)return;
         if(blackList.some(b=>b.qq===i.qq&&b.ip===i.ip))return alert("已拉黑过");
         blackList.push({qq:i.qq,ip:i.ip});
-        await syncBlackToGitHub();
-        alert("已拉黑");
+        syncBlackToGitHub();
+        alert("已拉黑：该用户的 QQ 和 IP 都已禁止发言 & 隐藏所有留言");
         renderAll();
       };
-      el.querySelector(".act-top").onclick=async ()=>{
-        if(!isLogin)return;
-        msgList[idx].isTop=!msgList[idx].isTop;
-        await syncDataToGitHub();
-        renderMsg();
-      };
+      el.querySelector(".act-top").onclick=()=>{if(!isLogin)return;msgList[idx].isTop=!msgList[idx].isTop;syncDataToGitHub();renderMsg();};
       el.querySelector(".act-edit").onclick=()=>openEdit(idx);
     }
   });
@@ -1438,13 +853,10 @@ function renderBlackList(){
     el.appendChild(d);
   });
 }
-async function unblock(i){
-  blackList.splice(i,1);
-  await syncBlackToGitHub();
-  renderAll();
-}
+function unblock(i){blackList.splice(i,1);syncBlackToGitHub();renderAll();}
 function renderAll(){renderMsg();renderBlackList();}
 
+// 启动：每次进来都从 GitHub 拉最新设置
 (async()=>{
   await loadAllFromGitHub();
   userIP=await getRealIP();
