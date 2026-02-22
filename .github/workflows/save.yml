@@ -1,26 +1,26 @@
-name: Test Save
+name: save
 on:
-  workflow_dispatch:
+  repository_dispatch:
+    types: [save_data]
 
 jobs:
-  test_save:
+  run:
     runs-on: ubuntu-latest
     steps:
-      - name: 检出代码
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
         with:
           token: ${{ secrets.TOKEN }}
-          ref: main
-
-      - name: 创建测试文件
+          
+      - name: write file
         run: |
-          # 直接创建一个新文件，不依赖任何现有文件
-          echo "Hello from Action at $(date)" > test_action_success.txt
-
-      - name: 提交并推送
+          cat > '${{ github.event.client_payload.file }}' << 'EOF'
+          ${{ github.event.client_payload.data }}
+          EOF
+          
+      - name: commit
         run: |
-          git config --global user.name "github-actions[bot]"
-          git config --global user.email "github-actions[bot]@noreply.github.com"
-          git add test_action_success.txt
-          git commit -m "测试成功 [skip ci]"
-          git push origin main
+          git config --global user.name "bot"
+          git config --global user.email "bot@example.com"
+          git add .
+          git commit -m "update" || exit 0
+          git push
