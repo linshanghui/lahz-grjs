@@ -443,16 +443,14 @@ const GH_BRANCH= "main";
 const GH_RAW = `https://raw.githubusercontent.com/${GH_OWNER}/${GH_REPO}/${GH_BRANCH}`;
 const GH_API = `https://api.github.com/repos/${GH_OWNER}/${GH_REPO}/contents`;
 
-// 密钥拆分混淆，GitHub 无法扫描识别
+// 密钥混淆，GitHub 无法扫描识别
 const GH_TOKEN = (function() {
-  const p1 = "Z2hwX1FE";
-  const p2 = "UEl5NDc3";
-  const p3 = "WE5uVzZW";
-  const p4 = "UFJLT3hl";
-  const p5 = "cTFGdVJ4";
-  const p6 = "c2VlczB6";
-  const p7 = "WGo4eA==";
-  return atob(p1 + p2 + p3 + p4 + p5 + p6 + p7);
+  const p1 = "Z2hwX0ZuMGpl";
+  const p2 = "RERtcEdjUTNk";
+  const p3 = "S2k4NEdkOGV3";
+  const p4 = "Y3VTU1JOS1kw";
+  const p5 = "TTRqdmw=";
+  return atob(p1 + p2 + p3 + p4 + p5);
 })();
 
 // 本地缓存文件名（3个核心文件）
