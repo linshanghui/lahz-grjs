@@ -48,7 +48,7 @@ a {
         </div>
 
         <!-- 音频元素 - 移除了autoplay属性 -->
-        <audio id="myaudio" src="https://img.lahz.cn/music_miao.mp3" controls="controls" hidden="true">
+        <audio id="myaudio" src="https://img.lahz.cn/music_miao.mp3" controls="controls" hidden="true"></audio>
 
         <!-- Header -->
         <header id="header">
@@ -204,53 +204,6 @@ a {
     <script src="./yibazhan/js/微信跳转功能整理.js"> </script>
     <script src="./yibazhan/js/xiaomao.js"></script>
     <script src="./yibazhan/js/bjyinyue.js"></script>
+    </body>
 
-<!-- ↓↓↓↓↓ 只加这一段，完全沿用你原有 GitHub 方式保存 msg_config.json ↓↓↓↓↓ -->
-<script>
-async function saveToGitHubMsgConfig(content) {
-  try {
-    const config = JSON.parse(localStorage.getItem('githubConfig'));
-    if (!config) return;
-
-    const { owner, repo, token, path = '' } = config;
-    const filePath = 'msg_config.json';
-    const fileContent = JSON.stringify({ content }, null, 2);
-
-    const headResp = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/${filePath}`, {
-      headers: { Authorization: `token ${token}` }
-    });
-    const sha = headResp.ok ? (await headResp.json()).sha : undefined;
-
-    await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/${filePath}`, {
-      method: 'PUT',
-      headers: {
-        'Authorization': `token ${token}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        message: 'Update msg_config.json',
-        content: btoa(unescape(encodeURIComponent(fileContent))),
-        sha: sha
-      })
-    });
-  } catch (e) {}
-}
-
-async function loadMsgConfig() {
-  try {
-    const config = JSON.parse(localStorage.getItem('githubConfig'));
-    if (!config) return;
-    const { owner, repo } = config;
-    const res = await fetch(`https://raw.githubusercontent.com/${owner}/${repo}/main/msg_config.json`);
-    const data = await res.json();
-    if (data.content && document.getElementById('sentence')) {
-      document.getElementById('sentence').innerText = data.content;
-    }
-  } catch (e) {}
-}
-
-window.addEventListener('DOMContentLoaded', loadMsgConfig);
-</script>
-
-</body>
 </html>
