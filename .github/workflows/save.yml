@@ -21,6 +21,8 @@ jobs:
         run: |
           git config --global user.name "bot"
           git config --global user.email "bot@example.com"
-          git add .
-          git commit -m "update" || exit 0
+          # 只提交触发保存的那个文件
+          git add '${{ github.event.client_payload.file }}'
+          # 提交信息加上 [skip ci]，跳过 Pages 构建
+          git commit -m "update ${{ github.event.client_payload.file }} [skip ci]" || exit 0
           git push
