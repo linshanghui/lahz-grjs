@@ -459,15 +459,21 @@ const defaultConfig = {
   nickMaxWords: 20,
   cooldown: 30,
   badWords: "操\n傻逼\n妈的\n垃圾\n滚",
-  pushTitle: "📢 留言墙有人留言啦"
+  pushTitle: "📢 留言墙有人留言啦",
+  pushContent: "",
+  pushHour: 22,
+  pushMin: 23
 };
 
 let config    = {...defaultConfig};
 let msgList   = [];
 let blackList = [];
 
-let pushConfig = JSON.parse(localStorage.getItem('pushConfig')) || {
-  content: "", hour: 22, min: 23
+// 推送配置统一从 config 读取
+let pushConfig = {
+  get content() { return config.pushContent || ""; },
+  get hour()    { return config.pushHour || 22; },
+  get min()     { return config.pushMin || 23; }
 };
 
 let lastPost = 0;
@@ -501,7 +507,6 @@ async function ghPut(file, data) {
     const content = btoa(unescape(encodeURIComponent(JSON.stringify(data, null, 2))));
     const url = `${GH_API}/${file}`;
     let sha = null;
-    // 获取文件当前 SHA（用于覆盖）
     try {
       const r = await fetch(url, {
         headers: {
@@ -516,7 +521,6 @@ async function ghPut(file, data) {
     } catch(e) {
       console.warn(`获取 ${file} SHA 失败，尝试新建`, e);
     }
-    // 发起 PUT 请求
     const response = await fetch(url, {
       method: "PUT",
       headers: {
@@ -537,7 +541,6 @@ async function ghPut(file, data) {
   } catch(e) {
     console.error(`同步 GitHub 出错:`, e);
   }
-  // 本地缓存兜底
   localStorage.setItem(file, JSON.stringify(data));
 }
 
@@ -616,35 +619,66 @@ async function manualPush(){
   await sendQmsg(c);
   alert('✅ 手动推送成功！');
 }
+
 function savePushConfigOnly(){
-  const c=document.getElementById('pushContent').value.trim();
-  const h=parseInt(document.getElementById('pushHour').value)||0;
-  const m=parseInt(document.getElementById('pushMin').value)||0;
-  pushConfig={content:c,hour:h,min:m};
-  localStorage.setItem('pushConfig',JSON.stringify(pushConfig));
-  alert('✅ 推送配置已保存');
+  const c = document.getElementById('pushContent').value.trim();
+  const h = parseInt(document.getElementById('pushHour').value) || 0;
+  const m = parseInt(document.getElementById('pushMin').value) || 0;
+
+  config.pushContent = c;
+  config.pushHour = h;
+  config.pushMin = m;
+
+  syncConfigToGitHub();
+  alert('✅ 推送配置已保存到 msg_config.json');
 }
 
 function startDailyPush(){
-  const c=document.getElementById('pushContent').value.trim();
-  const h=parseInt(document.getElementById('pushHour').value)||0;
-  const m=parseInt(document.getElementById('pushMin').value)||0;
-  pushConfig={content:c,hour:h,min:m};
-  localStorage.setItem('pushConfig',JSON.stringify(pushConfig));
-  if(dailyTimer)clearTimeout(dailyTimer);dailyTimer=null;
+  savePushConfigOnly();
+  if(dailyTimer)clearTimeout(dailyTimer); dailyTimer=null;
   if(!pushConfig.content){alert('请输入推送内容');return;}
-  function nx(){const n=new Date();const t=new Date();t.setHours(pushConfig.hour,pushConfig.min,0,0);if(t<=n)t.setDate(t.getDate()+1);return t-n;}
-  async function f(){await sendQmsg(pushConfig.content);schedule();}
-  function schedule(){dailyTimer=setTimeout(f,nx());}
-  schedule();alert(`✅ 每日 ${pushConfig.hour}:${pushConfig.min} 推送已启动`);
+
+  function nx(){
+    const now = new Date();
+    const t = new Date();
+    t.setHours(pushConfig.hour, pushConfig.min, 0, 0);
+    if(t <= now) t.setDate(t.getDate()+1);
+    return t - now;
+  }
+  async function job(){
+    await sendQmsg(pushConfig.content);
+    schedule();
+  }
+  function schedule(){
+    dailyTimer = setTimeout(job, nx());
+  }
+  schedule();
+  alert(`✅ 每日 ${pushConfig.hour}:${pushConfig.min} 推送已启动`);
 }
-function stopDailyPush(){if(dailyTimer)clearTimeout(dailyTimer);dailyTimer=null;alert("✅ 已停止每日推送");}
-function genAutoPushUrl(){return location.origin+location.pathname+"?push=1";}
-async function checkUrlPush(){if(location.search.includes('push=1'))await sendQmsg(pushConfig.content||'访问推送');}
+
+function stopDailyPush(){
+  if(dailyTimer)clearTimeout(dailyTimer);
+  dailyTimer=null;
+  alert("✅ 已停止每日推送");
+}
+
+function genAutoPushUrl(){
+  return location.origin+location.pathname+"?push=1";
+}
+
+async function checkUrlPush(){
+  if(location.search.includes('push=1')){
+    await sendQmsg(pushConfig.content||'访问推送');
+  }
+}
 
 async function getQQInfo(q){
   if(!/^\d{5,13}$/.test(q))return{nickname:"热心网友"};
-  try{const r=await fetch(`https://uapis.cn/api/v1/social/qq/userinfo?qq=${q}`);const d=await r.json();if(d&&d.nickname)return{nickname:d.nickname};}catch(e){}
+  try{
+    const r=await fetch(`https://uapis.cn/api/v1/social/qq/userinfo?qq=${q}`);
+    const d=await r.json();
+    if(d&&d.nickname)return{nickname:d.nickname};
+  }catch(e){}
   return{nickname:"热心网友"};
 }
 
@@ -732,6 +766,11 @@ function loadConfigToForm(){
   document.getElementById("set_cd").value=config.cooldown;
   document.getElementById("set_bad").value=config.badWords;
   document.getElementById("set_push_title").value=config.pushTitle||"";
+
+  // 推送配置回填
+  document.getElementById("pushContent").value = config.pushContent || "";
+  document.getElementById("pushHour").value = config.pushHour || 22;
+  document.getElementById("pushMin").value = config.pushMin || 23;
 }
 
 function saveSetting(){
