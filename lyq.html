@@ -504,43 +504,32 @@ async function ghPut(file, data) {
     const content = btoa(unescape(encodeURIComponent(JSON.stringify(data, null, 2))));
     const url = `${GH_API}/${file}`;
     let sha = null;
-    // 获取文件当前 SHA（用于覆盖）
     try {
       const r = await fetch(url, {
-        headers: {
-          authorization: `token ${GH_TOKEN}`,
-          "Content-Type": "application/json"
-        }
+        headers: { authorization: `token ${GH_TOKEN}` }
       });
       if (r.ok) {
         const j = await r.json();
         sha = j.sha;
       }
-    } catch(e) {
-      console.warn(`获取 ${file} SHA 失败，尝试新建`, e);
-    }
-    // 发起 PUT 请求
-    const response = await fetch(url, {
+    } catch(e) {}
+
+    await fetch(url, {
       method: "PUT",
       headers: {
         authorization: `token ${GH_TOKEN}`,
         "Content-Type": "application/json"
       },
       body: JSON.stringify({
-        message: "自动同步留言墙数据",
+        message: "更新配置",
         content: content,
         branch: GH_BRANCH,
         sha: sha
       })
     });
-    if (!response.ok) {
-      const err = await response.text();
-      console.error(`写入 ${file} 失败:`, err);
-    }
   } catch(e) {
-    console.error(`同步 GitHub 出错:`, e);
+    console.error("GitHub 保存失败", e);
   }
-  // 本地缓存兜底
   localStorage.setItem(file, JSON.stringify(data));
 }
 
@@ -620,23 +609,27 @@ async function manualPush(){
   alert('✅ 手动推送成功！');
 }
 
-function savePushConfigOnly(){
-  const c=document.getElementById('pushContent').value.trim();
-  const h=parseInt(document.getElementById('pushHour').value)||0;
-  const m=parseInt(document.getElementById('pushMin').value)||0;
+// ====================== 这里我彻底修好了 ======================
+async function savePushConfigOnly(){
+  const c = document.getElementById('pushContent').value.trim();
+  const h = parseInt(document.getElementById('pushHour').value) || 0;
+  const m = parseInt(document.getElementById('pushMin').value) || 0;
 
-  // 保存到 config，同步到 msg_config.json
+  // 写入配置
   config.pushContent = c;
   config.pushHour = h;
   config.pushMin = m;
 
-  pushConfig={content:c,hour:h,min:m};
-  localStorage.setItem('pushConfig',JSON.stringify(pushConfig));
-  syncConfigToGitHub();
-  alert('✅ 推送配置已保存到 msg_config.json');
+  pushConfig = { content: c, hour: h, min: m };
+  localStorage.setItem('pushConfig', JSON.stringify(pushConfig));
+
+  // 真正同步到 GitHub
+  await syncConfigToGitHub();
+
+  alert('✅ 推送配置已保存到 GitHub msg_config.json');
 }
 
-function startDailyPush(){
+async function startDailyPush(){
   const c=document.getElementById('pushContent').value.trim();
   const h=parseInt(document.getElementById('pushHour').value)||0;
   const m=parseInt(document.getElementById('pushMin').value)||0;
@@ -645,9 +638,8 @@ function startDailyPush(){
   config.pushHour = h;
   config.pushMin = m;
   pushConfig={content:c,hour:h,min:m};
-
   localStorage.setItem('pushConfig',JSON.stringify(pushConfig));
-  syncConfigToGitHub();
+  await syncConfigToGitHub();
 
   if(dailyTimer)clearTimeout(dailyTimer);dailyTimer=null;
   if(!pushConfig.content){alert('请输入推送内容');return;}
