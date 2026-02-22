@@ -459,7 +459,10 @@ const defaultConfig = {
   nickMaxWords: 20,
   cooldown: 30,
   badWords: "操\n傻逼\n妈的\n垃圾\n滚",
-  pushTitle: "📢 留言墙有人留言啦"
+  pushTitle: "📢 留言墙有人留言啦",
+  pushContent: "",
+  pushHour: 22,
+  pushMin: 23
 };
 
 let config    = {...defaultConfig};
@@ -616,21 +619,36 @@ async function manualPush(){
   await sendQmsg(c);
   alert('✅ 手动推送成功！');
 }
+
 function savePushConfigOnly(){
   const c=document.getElementById('pushContent').value.trim();
   const h=parseInt(document.getElementById('pushHour').value)||0;
   const m=parseInt(document.getElementById('pushMin').value)||0;
+
+  // 保存到 config，同步到 msg_config.json
+  config.pushContent = c;
+  config.pushHour = h;
+  config.pushMin = m;
+
   pushConfig={content:c,hour:h,min:m};
   localStorage.setItem('pushConfig',JSON.stringify(pushConfig));
-  alert('✅ 推送配置已保存');
+  syncConfigToGitHub();
+  alert('✅ 推送配置已保存到 msg_config.json');
 }
 
 function startDailyPush(){
   const c=document.getElementById('pushContent').value.trim();
   const h=parseInt(document.getElementById('pushHour').value)||0;
   const m=parseInt(document.getElementById('pushMin').value)||0;
+
+  config.pushContent = c;
+  config.pushHour = h;
+  config.pushMin = m;
   pushConfig={content:c,hour:h,min:m};
+
   localStorage.setItem('pushConfig',JSON.stringify(pushConfig));
+  syncConfigToGitHub();
+
   if(dailyTimer)clearTimeout(dailyTimer);dailyTimer=null;
   if(!pushConfig.content){alert('请输入推送内容');return;}
   function nx(){const n=new Date();const t=new Date();t.setHours(pushConfig.hour,pushConfig.min,0,0);if(t<=n)t.setDate(t.getDate()+1);return t-n;}
@@ -732,6 +750,11 @@ function loadConfigToForm(){
   document.getElementById("set_cd").value=config.cooldown;
   document.getElementById("set_bad").value=config.badWords;
   document.getElementById("set_push_title").value=config.pushTitle||"";
+
+  // 加载推送内容到表单
+  document.getElementById("pushContent").value = config.pushContent || "";
+  document.getElementById("pushHour").value = config.pushHour || 22;
+  document.getElementById("pushMin").value = config.pushMin || 23;
 }
 
 function saveSetting(){
