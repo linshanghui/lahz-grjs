@@ -1,11 +1,6 @@
 name: Test Save
 on:
   workflow_dispatch:
-    inputs:
-      minWords:
-        description: '最少字数'
-        required: true
-        default: '10'
 
 jobs:
   test_save:
@@ -17,32 +12,15 @@ jobs:
           token: ${{ secrets.TOKEN }}
           ref: main
 
-      - name: 读取或创建配置
-        id: read_config
+      - name: 创建测试文件
         run: |
-          # 如果文件不存在，就创建一个默认配置
-          if [ ! -f "msg_config.json" ]; then
-            echo '{"minWords":5,"maxWords":200,"nickMaxWords":20,"cooldown":30,"badWords":"操\n傻逼\n妈的\n垃圾\n滚","pushTitle":"📢 留言墙有人留言啦"}' > msg_config.json
-          fi
-          # 读取配置内容
-          CONFIG=$(cat msg_config.json)
-          echo "config=$CONFIG" >> $GITHUB_OUTPUT
-
-      - name: 修改配置
-        run: |
-          # 使用 Node.js 来修改 JSON，避免依赖 jq
-          NEW_MIN_WORDS=${{ github.event.inputs.minWords }}
-          node -e "
-            const fs = require('fs');
-            const config = JSON.parse(fs.readFileSync('msg_config.json', 'utf8'));
-            config.minWords = parseInt('$NEW_MIN_WORDS');
-            fs.writeFileSync('msg_config.json', JSON.stringify(config, null, 2));
-          "
+          # 直接创建一个新文件，不依赖任何现有文件
+          echo "Hello from Action at $(date)" > test_action_success.txt
 
       - name: 提交并推送
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@noreply.github.com"
-          git add msg_config.json
-          git commit -m "更新配置 [skip ci]"
+          git add test_action_success.txt
+          git commit -m "测试成功 [skip ci]"
           git push origin main
