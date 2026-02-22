@@ -436,7 +436,7 @@ textarea {
 </div>
 
 <script>
-// ====================== GitHub 配置（无任何 Token）======================
+// ====================== GitHub 配置（无 Token）======================
 const GH_OWNER   = "linshanghui";
 const GH_REPO    = "lahz-grjs";
 const GH_BRANCH  = "main";
@@ -445,7 +445,7 @@ const GH_RAW = `https://raw.githubusercontent.com/${GH_OWNER}/${GH_REPO}/${GH_BR
 const FILE_CONFIG = "msg_config.json";
 const FILE_DATA   = "msg_data.json";
 const FILE_BLACK  = "msg_black.json";
-// ======================================================================
+// ====================================================================
 
 let adminPwd = localStorage.getItem('adminPwd') || "123456";
 
@@ -461,10 +461,7 @@ const defaultConfig = {
 let config    = {...defaultConfig};
 let msgList   = [];
 let blackList = [];
-
-let pushConfig = JSON.parse(localStorage.getItem('pushConfig')) || {
-  content: "", hour: 22, min: 23
-};
+let pushConfig = JSON.parse(localStorage.getItem('pushConfig')) || { content: "", hour: 22, min: 23 };
 
 let lastPost = 0;
 let isLogin = false;
@@ -476,18 +473,17 @@ let editRealIndex = -1;
 const QMSG_KEY = "bccdf562f8785c98f39b6cd53fe6ac32";
 const tagColors = ["#13c2c2","#722ed1","#eb2f96","#1890ff","#52c41a","#faad14","#f5222d","#fa8c16"];
 
-// 从 GitHub 读取（公开可访问）
+// 读取
 async function ghGet(file) {
   try {
     const r = await fetch(`${GH_RAW}/${file}`);
-    if (!r.ok) return file === FILE_CONFIG ? {...defaultConfig} : [];
-    return await r.json();
+    return r.ok ? await r.json() : (file === FILE_CONFIG ? {...defaultConfig} : []);
   } catch(e) {
     return file === FILE_CONFIG ? {...defaultConfig} : [];
   }
 }
 
-// 保存：通过 Action 写入（用你仓库的密钥）
+// 触发 Action 保存（关键！！！）
 async function ghSave(file, data) {
   try {
     await fetch(`https://api.github.com/repos/${GH_OWNER}/${GH_REPO}/dispatches`, {
@@ -515,7 +511,7 @@ function syncDataToGitHub()   { return ghSave(FILE_DATA,   msgList); }
 function syncBlackToGitHub()  { return ghSave(FILE_BLACK, blackList); }
 
 // ============================================================================
-// 以下所有逻辑、样式、功能完全和你原来一模一样，我一行没改
+// 下面功能全部不变
 // ============================================================================
 
 function getFixedColor(str) {
@@ -704,13 +700,13 @@ function saveSetting(){
   config.nickMaxWords=+document.getElementById("set_nick_max").value||20;
   config.cooldown=+document.getElementById("set_cd").value||30;
   config.pushTitle=document.getElementById("set_push_title").value.trim()||defaultConfig.pushTitle;
-  syncConfigToGitHub();
+  syncConfigToGitHub(); // 这里触发保存到 msg_config.json
   alert("保存成功");
   refreshAllWordTip();
 }
 function saveBadWords(){
   config.badWords=document.getElementById("set_bad").value;
-  syncConfigToGitHub();
+  syncConfigToGitHub(); // 这里触发保存到 msg_config.json
   alert("保存成功");
 }
 function saveNewPwd(){
