@@ -1,0 +1,26 @@
+name: 保存数据到JSON
+on:
+  repository_dispatch:
+    types: [save_data]
+
+jobs:
+  write:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.TOKEN }}
+
+      - name: 写入文件
+        run: |
+          cat > '${{ github.event.client_payload.file }}' << 'EOF'
+          ${{ github.event.client_payload.data }}
+          EOF
+
+      - name: 提交并推送
+        run: |
+          git config --global user.name "bot"
+          git config --global user.email "bot@github.com"
+          git add .
+          git commit -m "自动保存数据"
+          git push
