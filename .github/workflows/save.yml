@@ -9,7 +9,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
+          # 这里会自动使用你仓库里配置的 secrets.TOKEN
           token: ${{ secrets.TOKEN }}
+          ref: main
 
       - name: 写入文件
         run: |
@@ -17,10 +19,11 @@ jobs:
           ${{ github.event.client_payload.data }}
           EOF
 
-      - name: 提交并推送
+      - name: 提交并推送（跳过 Pages 构建）
         run: |
-          git config --global user.name "bot"
-          git config --global user.email "bot@github.com"
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@noreply.github.com"
           git add .
-          git commit -m "自动保存数据"
-          git push
+          # 关键：提交信息加 [skip ci]，强制跳过此次提交触发的 Pages 构建
+          git commit -m "自动保存数据 [skip ci]"
+          git push origin main
