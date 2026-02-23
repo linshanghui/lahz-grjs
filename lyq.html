@@ -1,0 +1,896 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>留言墙</title>
+<style>
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+body {
+  background: #f7f7fa;
+  padding: 12px;
+  max-width: 600px;
+  margin: 0 auto;
+}
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  gap: 8px;
+}
+.title {
+  font-size: 20px;
+  font-weight: 600;
+  color: #222;
+}
+.btn {
+  padding: 8px 12px;
+  border: none;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.btn-primary {
+  background: #409eff;
+  color: #fff;
+}
+.btn-danger {
+  background: #f56756;
+  color: #fff;
+}
+
+.publish-card {
+  background: #fff;
+  border-radius: 16px;
+  padding: 16px;
+  margin-bottom: 16px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+}
+.publish-card input,
+.publish-card textarea {
+  width: 100%;
+  padding: 12px 14px;
+  border: 1px solid #eee;
+  border-radius: 12px;
+  margin-bottom: 10px;
+  outline: none;
+  font-size: 15px;
+  background: #fafafa;
+  transition: border 0.2s;
+}
+.publish-card input:focus,
+.publish-card textarea:focus {
+  border-color: #409eff;
+}
+
+.nick-preview {
+  font-size: 13px;
+  color: #409eff;
+  margin: -5px 0 10px;
+  display: none;
+}
+.word-tip {
+  font-size: 13px;
+  color: #666;
+  margin: 0 0 10px;
+}
+
+.publish-card textarea {
+  min-height: 100px;
+  resize: none;
+}
+.publish-card button {
+  width: 100%;
+  padding: 12px;
+  background: #409eff;
+  color: #fff;
+  border: none;
+  border-radius: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+.publish-card button:hover {
+  opacity: 0.9;
+}
+
+.message-wall {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.message-item {
+  background: #fff;
+  border-radius: 16px;
+  padding: 14px;
+  position: relative;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+  display: flex;
+  gap: 12px;
+}
+.message-item.top {
+  border: 1px solid #ffd43b;
+  background: #fffdf5;
+}
+.avatar {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  object-fit: cover;
+  background: #eee;
+  flex-shrink: 0;
+}
+.msg-right {
+  flex: 1;
+}
+.name {
+  font-weight: 600;
+  font-size: 15px;
+  color: #222;
+  margin-bottom: 6px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.top-tag {
+  background: #FF7D00;
+  color: #fff;
+  font-size: 11px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-weight: bold;
+}
+.tag-item {
+  font-size: 11px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-weight: bold;
+  color: #fff;
+}
+.content {
+  font-size: 15px;
+  line-height: 1.5;
+  color: #333;
+  word-break: break-all;
+}
+.qq-time-ip {
+  font-size: 12px;
+  color: #999;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-top: 8px;
+}
+
+.admin-actions {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  display: none;
+  gap: 4px;
+}
+.act-del { background: #f56756; width: 26px; height: 22px; font-size: 10px; border: none; border-radius: 4px; color: #fff; cursor: pointer; }
+.act-block { background: #ff9f43; width: 26px; height: 22px; font-size: 10px; border: none; border-radius: 4px; color: #fff; cursor: pointer; }
+.act-top { background: #409eff; width: 26px; height: 22px; font-size: 10px; border: none; border-radius: 4px; color: #fff; cursor: pointer; }
+.act-edit { background: #722ed1; width: 26px; height: 22px; font-size: 10px; border: none; border-radius: 4px; color: #fff; cursor: pointer; }
+
+.edit-modal {
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  background: rgba(0,0,0,0.5);
+  display: none;
+  justify-content: center;
+  align-items: center;
+  z-index: 99999;
+}
+.edit-box {
+  background: #fff;
+  width: 90%;
+  max-width: 400px;
+  border-radius: 16px;
+  padding: 20px;
+}
+.edit-box h4 {
+  margin-bottom: 12px;
+  font-size: 16px;
+}
+.edit-box input, .edit-box textarea {
+  width: 100%;
+  padding: 10px;
+  margin-bottom: 10px;
+  border: 1px solid #eee;
+  border-radius: 8px;
+  outline: none;
+}
+.edit-btns {
+  display: flex;
+  gap: 10px;
+  margin-top: 10px;
+}
+.edit-btns button {
+  flex: 1;
+  padding: 10px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+}
+.btn-save { background: #409eff; color: #fff; }
+.btn-cancel { background: #f1f1f1; color: #333; }
+
+.backend-modal {
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  background: rgba(0,0,0,0.3);
+  display: none;
+  z-index: 9999;
+}
+.backend-box {
+  background: #fff;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+.backend-header {
+  background: #409eff;
+  color: #fff;
+  padding: 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.backend-close {
+  background: none; border: none;
+  color: #fff; font-size: 20px;
+  cursor: pointer;
+}
+.backend-body {
+  flex: 1;
+  padding: 16px;
+  overflow-y: auto;
+  background: #f7f7fa;
+}
+.section {
+  background: #fff;
+  border-radius: 14px;
+  padding: 16px;
+  margin-bottom: 14px;
+}
+.section h4 {
+  margin-bottom: 12px;
+  font-size: 16px;
+}
+.set-row {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+.set-row span {
+  font-size: 14px;
+  color: #555;
+}
+.set-row input {
+  padding: 10px 12px;
+  border: 1px solid #eee;
+  border-radius: 10px;
+  font-size: 15px;
+  background: #fafafa;
+}
+textarea {
+  width: 100%;
+  height: 100px;
+  padding: 12px;
+  border: 1px solid #eee;
+  border-radius: 10px;
+  font-size: 14px;
+  background: #fafafa;
+  resize: none;
+}
+.save-btn {
+  width: 100%;
+  padding: 11px;
+  background: #409eff;
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  margin-top: 6px;
+  cursor: pointer;
+}
+
+.black-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 12px;
+  background: #fafafa;
+  border-radius: 10px;
+  margin-bottom: 8px;
+}
+.unblock {
+  background: #409eff;
+  color: #fff;
+  border: none;
+  padding: 5px 9px;
+  border-radius: 6px;
+  font-size: 12px;
+  cursor: pointer;
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="title">💬 留言墙</div>
+  <div style="display:flex;gap:6px;">
+    <button class="btn btn-primary" onclick="openBackend()">管理</button>
+    <button class="btn btn-danger" id="logoutBtn" style="display:none;" onclick="logoutAdmin()">退出登录</button>
+  </div>
+</div>
+
+<div class="publish-card">
+  <input id="qq" placeholder="请输入QQ号" autocomplete="off">
+  <div class="nick-preview" id="nickPreview">正在获取昵称...</div>
+  <div class="word-tip" id="nickWordTip"></div>
+
+  <textarea id="content" placeholder="想说点什么..."></textarea>
+  <div class="word-tip" id="contentWordTip"></div>
+
+  <button onclick="postMsg()">发布留言</button>
+</div>
+
+<div class="message-wall" id="msgWall"></div>
+
+<div class="edit-modal" id="editModal">
+  <div class="edit-box">
+    <h4>编辑留言</h4>
+    <input id="edit_name" placeholder="昵称">
+    <input id="edit_qq" placeholder="QQ">
+    <input id="edit_time" placeholder="时间">
+    <input id="edit_ip" placeholder="IP">
+    <textarea id="edit_content" rows="4" placeholder="内容"></textarea>
+    <input id="edit_tags" placeholder="格式：搞笑:#ff5722 日常:#1890ff">
+    <div class="edit-btns">
+      <button class="btn-cancel" onclick="closeEdit()">取消</button>
+      <button class="btn-save" onclick="saveEdit()">保存</button>
+    </div>
+  </div>
+</div>
+
+<div class="backend-modal" id="backendModal">
+  <div class="backend-box">
+    <div class="backend-header">
+      <h3>管理后台</h3>
+      <button class="backend-close" onclick="closeBackend()">×</button>
+    </div>
+    <div class="backend-body">
+      <div class="section">
+        <h4>基础设置</h4>
+        <div class="set-row"><span>最少字数</span><input id="set_min"></div>
+        <div class="set-row"><span>最多字数</span><input id="set_max"></div>
+        <div class="set-row"><span>昵称最大字数</span><input id="set_nick_max"></div>
+        <div class="set-row"><span>发言间隔(秒)</span><input id="set_cd"></div>
+        <div class="set-row"><span>推送标题</span><input id="set_push_title" placeholder="为空则使用默认标题"></div>
+        <button class="save-btn" onclick="saveSetting()">保存设置</button>
+      </div>
+
+      <div class="section" style="background:#e6f7ff;">
+        <h4>🔧 推送功能</h4>
+        <div class="set-row">
+          <span>推送内容</span>
+          <textarea id="pushContent" placeholder="请输入要推送的内容"></textarea>
+        </div>
+        <div class="set-row">
+          <button class="save-btn" style="background:#52c41a" onclick="manualPush()">立即手动推送</button>
+        </div>
+        <div style="display:flex;gap:8px;margin-top:8px;">
+          <div style="flex:1;">
+            <span>每日定点小时（0-23）</span>
+            <input type="number" id="pushHour" min="0" max="23">
+          </div>
+          <div style="flex:1;">
+            <span>每日定点分钟（0-59）</span>
+            <input type="number" id="pushMin" min="0" max="59">
+          </div>
+        </div>
+        <div style="display:flex;gap:6px;margin-top:8px;">
+          <button class="save-btn" style="background:#ff9f43;flex:1" onclick="startDailyPush()">启动每日推送</button>
+          <button class="save-btn" style="background:#f56756;flex:1" onclick="stopDailyPush()">停止每日推送</button>
+        </div>
+        <div style="margin-top:8px;">
+          <button class="save-btn" style="background:#722ed1;" onclick="savePushConfigOnly()">保存推送配置</button>
+        </div>
+        <div style="font-size:12px;color:#666;margin-top:8px;">
+          访问推送链接：<span id="autoPushUrl"></span>
+        </div>
+      </div>
+
+      <div class="section">
+        <h4>敏感词</h4>
+        <textarea id="set_bad"></textarea>
+        <button class="save-btn" onclick="saveBadWords()">保存敏感词</button>
+      </div>
+      <div class="section">
+        <h4>修改密码</h4>
+        <div class="set-row"><span>新密码</span><input id="new_pwd"></div>
+        <button class="save-btn" onclick="saveNewPwd()">保存密码</button>
+      </div>
+      <div class="section">
+        <h4>已拉黑</h4>
+        <div id="blackList"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ====================== Gitee 读写配置（你只改这里）=====================
+const GITEE_TOKEN  = "你的Gitee个人令牌";
+const GITEE_OWNER  = "linshanghui";
+const GITEE_REPO   = "lahz-grjs";
+const GITEE_BRANCH = "main";
+// ====================================================================
+
+const FILE_CONFIG = "msg_config.json";
+const FILE_DATA   = "msg_data.json";
+const FILE_BLACK  = "msg_black.json";
+const FILE_PUSH   = "msg_push.json"; // 推送配置文件
+
+let adminPwd = localStorage.getItem('adminPwd') || "123456";
+localStorage.setItem('adminPwd', adminPwd);
+
+const defaultConfig = {
+  minWords: 5,
+  maxWords: 200,
+  nickMaxWords: 20,
+  cooldown: 30,
+  badWords: "操\n傻逼\n妈的\n垃圾\n滚",
+  pushTitle: "📢 留言墙有人留言啦"
+};
+
+let config    = {...defaultConfig};
+let msgList   = [];
+let blackList = [];
+let pushConfig = { content: "", hour: 22, min: 23 };
+
+let lastPost = 0;
+let isLogin = false;
+let userIP = "127.0.0.1";
+let currentNickname = "";
+let dailyTimer = null;
+let editRealIndex = -1;
+
+const QMSG_KEY = "bccdf562f8785c98f39b6cd53fe6ac32";
+const tagColors = ["#13c2c2","#722ed1","#eb2f96","#1890ff","#52c41a","#faad14","#f5222d","#fa8c16"];
+
+// 读取文件（修复中文乱码）
+async function giteeGet(file) {
+  try {
+    const res = await fetch(`https://gitee.com/api/v5/repos/${GITEE_OWNER}/${GITEE_REPO}/contents/${file}?ref=${GITEE_BRANCH}`);
+    const data = await res.json();
+    // 正确解码中文
+    const content = JSON.parse(decodeURIComponent(escape(atob(data.content))));
+    localStorage.setItem(file, JSON.stringify(content));
+    return content;
+  } catch (e) {
+    const local = localStorage.getItem(file);
+    return local ? JSON.parse(local) : (file === FILE_CONFIG ? {...defaultConfig} : []);
+  }
+}
+
+// 写入文件（修复中文乱码）
+async function giteePut(file, content) {
+  try {
+    const getRes = await fetch(`https://gitee.com/api/v5/repos/${GITEE_OWNER}/${GITEE_REPO}/contents/${file}?ref=${GITEE_BRANCH}`);
+    const getJson = await getRes.json();
+    const sha = getRes.ok ? getJson.sha : undefined;
+
+    const jsonStr = JSON.stringify(content, null, 2);
+    const base64 = btoa(unescape(encodeURIComponent(jsonStr)));
+
+    const body = {
+      access_token: GITEE_TOKEN,
+      content: base64,
+      message: `update ${file}`,
+      branch: GITEE_BRANCH
+    };
+    if (sha) body.sha = sha;
+
+    const res = await fetch(`https://gitee.com/api/v5/repos/${GITEE_OWNER}/${GITEE_REPO}/contents/${file}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+
+    if (res.ok) {
+      localStorage.setItem(file, jsonStr);
+      return true;
+    } else {
+      console.error(await res.json());
+      return false;
+    }
+  } catch (e) {
+    console.error(e);
+    return false;
+  }
+}
+
+// 同步
+async function syncConfig() {
+  const ok = await giteePut(FILE_CONFIG, config);
+  alert(ok ? "✅ 配置已同步到码云" : "❌ 同步失败");
+}
+async function syncData() {
+  const ok = await giteePut(FILE_DATA, msgList);
+  alert(ok ? "✅ 留言已同步到码云" : "❌ 同步失败");
+}
+async function syncBlack() {
+  const ok = await giteePut(FILE_BLACK, blackList);
+  alert(ok ? "✅ 黑名单已同步到码云" : "❌ 同步失败");
+}
+async function syncPush() {
+  const ok = await giteePut(FILE_PUSH, pushConfig);
+  alert(ok ? "✅ 推送配置已同步到码云" : "❌ 同步失败");
+}
+
+// 工具
+function getFixedColor(str) {
+  let h=0; for(let i=0;i<str.length;i++)h=str.charCodeAt(i)+((h<<5)-h);
+  return tagColors[Math.abs(h)%tagColors.length];
+}
+function parseTags(i){
+  if(!i)return[];return i.split(/\s+/).filter(x=>x.trim()).map(p=>{
+    if(p.includes(':')){const[t,c]=p.split(':',2);return{text:t.trim(),color:c.trim()};}
+    else return{text:p.trim(),color:getFixedColor(p)};
+  });
+}
+
+function updateNickWordTip(){
+  const v=document.getElementById('qq').value.trim();
+  document.getElementById('nickWordTip').innerText=`昵称已输入 ${v.length} / ${config.nickMaxWords}`;
+}
+function updateContentWordTip(){
+  const v=document.getElementById('content').value;
+  document.getElementById('contentWordTip').innerText=`内容已输入 ${v.length} / ${config.maxWords}`;
+}
+function refreshAllWordTip(){updateNickWordTip();updateContentWordTip();}
+
+function cutNick(n){
+  if(!n) return "热心网友";
+  return n.length>config.nickMaxWords ? n.substring(0,config.nickMaxWords)+"..." : n;
+}
+
+// IP
+async function getRealIP() {
+  try{
+    return new Promise(r=>{
+      window.RTCPeerConnection = window.webkitRTCPeerConnection || window.RTCPeerConnection;
+      const pc=new RTCPeerConnection({iceServers:[]});
+      const s=new Set();
+      pc.createDataChannel("");
+      pc.onicecandidate=e=>{
+        if(!e.candidate){
+          const a=Array.from(s);
+          const loc=a.find(ip=>ip.startsWith("192.168.")||ip.startsWith("10.")||ip.startsWith("172."));
+          return r(loc||a[0]||"127.0.0.1");
+        }
+        const m=e.candidate.candidate.match(/(\d+\.\d+\.\d+\.\d+)/);
+        if(m)s.add(m[1]);
+      };
+      pc.createOffer().then(o=>pc.setLocalDescription(o)).catch(()=>r("127.0.0.1"));
+      setTimeout(()=>r("127.0.0.1"),1500);
+    });
+  }catch(e){return"127.0.0.1";}
+}
+
+// 推送
+async function sendQmsg(c){
+  try{
+    const t=config.pushTitle||"推送";
+    await fetch(`https://qmsg.zendee.cn/send/${QMSG_KEY}`,{
+      method:"POST",
+      headers:{"Content-Type":"application/x-www-form-urlencoded"},
+      body:`msg=${encodeURIComponent(t+"\n"+c.replace(/\d+/g,m=>m.split('').join(' ')))}`
+    });
+  }catch(e){}
+}
+
+async function manualPush(){
+  const c=document.getElementById('pushContent').value.trim();
+  if(!c)return alert('请输入推送内容');
+  await sendQmsg(c);
+  alert('✅ 手动推送成功！');
+}
+
+function savePushConfigOnly(){
+  pushConfig.content = document.getElementById('pushContent').value.trim();
+  pushConfig.hour    = parseInt(document.getElementById('pushHour').value) || 0;
+  pushConfig.min     = parseInt(document.getElementById('pushMin').value) || 0;
+  syncPush();
+}
+
+function startDailyPush(){
+  savePushConfigOnly();
+  if(dailyTimer)clearTimeout(dailyTimer); dailyTimer=null;
+  if(!pushConfig.content){alert('请输入推送内容');return;}
+  function nextMs(){
+    const now = new Date();
+    const tar = new Date();
+    tar.setHours(pushConfig.hour, pushConfig.min, 0, 0);
+    if(tar <= now) tar.setDate(tar.getDate()+1);
+    return tar - now;
+  }
+  async function job(){
+    await sendQmsg(pushConfig.content);
+    schedule();
+  }
+  function schedule(){
+    dailyTimer = setTimeout(job, nextMs());
+  }
+  schedule();
+  alert(`✅ 每日 ${pushConfig.hour}:${pushConfig.min} 推送已启动`);
+}
+
+function stopDailyPush(){
+  if(dailyTimer)clearTimeout(dailyTimer);
+  dailyTimer=null;
+  alert("✅ 已停止每日推送");
+}
+
+function genAutoPushUrl(){
+  return location.origin + location.pathname + "?push=1";
+}
+
+async function checkUrlPush(){
+  if(location.search.includes('push=1')){
+    await sendQmsg(pushConfig.content || '访问推送');
+  }
+}
+
+// QQ昵称
+async function getQQInfo(q){
+  if(!/^\d{5,13}$/.test(q))return{nickname:"热心网友"};
+  try{
+    const r=await fetch(`https://uapis.cn/api/v1/social/qq/userinfo?qq=${q}`);
+    const d=await r.json();
+    if(d&&d.nickname)return{nickname:d.nickname};
+  }catch(e){}
+  return{nickname:"热心网友"};
+}
+
+let queryTimer=null;
+const qqInput=document.getElementById('qq');
+const nickPreview=document.getElementById('nickPreview');
+const contentInput=document.getElementById('content');
+
+qqInput.addEventListener('input',function(){
+  if(this.value.length>config.nickMaxWords)this.value=this.value.substring(0,config.nickMaxWords);
+  updateNickWordTip();
+  const q=this.value.trim();
+  nickPreview.style.display='none';currentNickname='';
+  if(q.length<5)return;
+  clearTimeout(queryTimer);
+  queryTimer=setTimeout(async()=>{
+    nickPreview.textContent="正在获取昵称...";nickPreview.style.display='block';
+    const i=await getQQInfo(q);currentNickname=i.nickname;
+    nickPreview.textContent=`当前昵称：${cutNick(i.nickname)}`;
+  },600);
+});
+
+contentInput.addEventListener('input',function(){
+  if(this.value.length>config.maxWords)this.value=this.value.substring(0,config.maxWords);
+  updateContentWordTip();
+});
+
+// 编辑
+function openEdit(idx){
+  if(!isLogin)return;
+  const it=msgList[idx];if(!it)return;
+  editRealIndex=idx;
+  document.getElementById('edit_name').value=it.name||"";
+  document.getElementById('edit_qq').value=it.qq;
+  document.getElementById('edit_time').value=it.time;
+  document.getElementById('edit_ip').value=it.ip;
+  document.getElementById('edit_content').value=it.content;
+  document.getElementById('edit_tags').value=(it.tagsObj||[]).map(t=>`${t.text}:${t.color}`).join(' ');
+  document.getElementById('editModal').style.display='flex';
+}
+function closeEdit(){document.getElementById('editModal').style.display='none';editRealIndex=-1;}
+
+function saveEdit(){
+  if(editRealIndex===-1)return;
+  const n=document.getElementById('edit_name').value.trim();
+  const q=document.getElementById('edit_qq').value.trim();
+  const t=document.getElementById('edit_time').value.trim();
+  const ip=document.getElementById('edit_ip').value.trim();
+  const c=document.getElementById('edit_content').value.trim();
+  const ts=document.getElementById('edit_tags').value.trim();
+  if(!q||!c)return alert('QQ和内容不能为空');
+  const tags=parseTags(ts);
+  const it=msgList[editRealIndex];
+  it.name=n||"热心网友";
+  it.qq=q;
+  it.time=t;
+  it.ip=ip;
+  it.content=c;
+  it.tagsObj=tags;
+  it.avatar=`https://q.qlogo.cn/headimg_dl?dst_uin=${q}&spec=100`;
+  syncData();
+  closeEdit();
+  renderMsg();
+}
+
+// 后台
+function openBackend(){
+  if(!isLogin){
+    const p=prompt("请输入管理密码：");
+    if(p!==adminPwd)return alert("密码错误");
+    isLogin=true;
+    document.getElementById("logoutBtn").style.display="inline-block";
+  }
+  document.getElementById("backendModal").style.display="flex";
+  document.getElementById("autoPushUrl").innerText=genAutoPushUrl();
+  loadConfigToForm();
+  renderAll();
+}
+function closeBackend(){document.getElementById("backendModal").style.display="none";}
+function logoutAdmin(){isLogin=false;document.getElementById("logoutBtn").style.display="none";closeBackend();alert("已退出登录");}
+
+function loadConfigToForm(){
+  document.getElementById("set_min").value=config.minWords;
+  document.getElementById("set_max").value=config.maxWords;
+  document.getElementById("set_nick_max").value=config.nickMaxWords;
+  document.getElementById("set_cd").value=config.cooldown;
+  document.getElementById("set_bad").value=config.badWords;
+  document.getElementById("set_push_title").value=config.pushTitle||"";
+
+  // 加载推送配置
+  document.getElementById("pushContent").value = pushConfig.content || "";
+  document.getElementById("pushHour").value   = pushConfig.hour || 22;
+  document.getElementById("pushMin").value    = pushConfig.min || 23;
+}
+
+function saveSetting(){
+  config.minWords     = +document.getElementById("set_min").value||5;
+  config.maxWords     = +document.getElementById("set_max").value||200;
+  config.nickMaxWords = +document.getElementById("set_nick_max").value||20;
+  config.cooldown     = +document.getElementById("set_cd").value||30;
+  config.pushTitle    = document.getElementById("set_push_title").value.trim()||defaultConfig.pushTitle;
+  syncConfig();
+  refreshAllWordTip();
+}
+function saveBadWords(){
+  config.badWords = document.getElementById("set_bad").value;
+  syncConfig();
+}
+function saveNewPwd(){
+  const np=document.getElementById("new_pwd").value.trim();
+  if(!np)return alert("请输入新密码");
+  adminPwd=np;
+  localStorage.setItem("adminPwd",adminPwd);
+  alert("密码修改成功");
+  document.getElementById("new_pwd").value="";
+}
+
+// 发布
+async function postMsg(){
+  const q=document.getElementById("qq").value.trim();
+  const c=document.getElementById("content").value.trim();
+  const now=Math.floor(Date.now()/1000);
+  if(!q)return alert("请输入QQ号");
+  if(!c)return alert("请输入内容");
+  if(c.length<config.minWords)return alert(`最少${config.minWords}字`);
+  if(c.length>config.maxWords)return alert(`最多${config.maxWords}字`);
+  if(now-lastPost<config.cooldown)return alert(`发言过于频繁，请${config.cooldown}秒后再试`);
+
+  userIP=await getRealIP();
+
+  if(blackList.some(b=>b.qq===q||b.ip===userIP))return alert("你已被拉黑，无法发言");
+  const bad=config.badWords.split("\n").map(x=>x.trim()).filter(Boolean);
+  for(const w of bad)if(c.includes(w))return alert("内容包含敏感词");
+
+  const msg={
+    qq:q,
+    name:cutNick(currentNickname||"热心网友"),
+    avatar:`https://q.qlogo.cn/headimg_dl?dst_uin=${q}&spec=100`,
+    content:c,
+    time:new Date().toLocaleString(),
+    ip:userIP,
+    isTop:false,
+    tagsObj:[]
+  };
+
+  msgList.unshift(msg);
+  await syncData();
+  lastPost=now;
+  await sendQmsg(`昵称：${msg.name}\nQQ：${q}\nIP：${userIP}\n内容：${c}`);
+
+  document.getElementById("content").value="";
+  qqInput.value="";
+  nickPreview.style.display="none";
+  currentNickname="";
+  refreshAllWordTip();
+  renderMsg();
+}
+
+// 渲染
+function renderMsg(){
+  const w=document.getElementById("msgWall");w.innerHTML="";
+  const show=msgList.filter(it=>!blackList.some(b=>b.qq===it.qq||b.ip===it.ip));
+  const sorted=[...show].sort((a,b)=>b.isTop-a.isTop);
+  if(!sorted.length){w.innerHTML=`<div style='text-align:center;padding:40px;color:#999'>暂无留言</div>`;return;}
+  sorted.forEach((it, idx)=>{
+    const top=it.isTop?`<span class="top-tag">置顶</span>`:'';
+    const tags=(it.tagsObj||[]).map(t=>`<span class="tag-item" style="background:${t.color}">${t.text}</span>`).join('');
+    const d=document.createElement("div");
+    d.className=`message-item ${it.isTop?'top':''}`;
+    d.innerHTML=`
+      <div class="admin-actions" id="act_${idx}">
+        <button class="act-del">删</button>
+        <button class="act-block">黑</button>
+        <button class="act-top">顶</button>
+        <button class="act-edit">编</button>
+      </div>
+      <img src="${it.avatar}" class="avatar" onerror="this.src='https://q.qlogo.cn/headimg_dl?dst_uin=10000&spec=100'">
+      <div class="msg-right">
+        <div class="name">${it.name} ${top} ${tags}</div>
+        <div class="content">${it.content}</div>
+        <div class="qq-time-ip">QQ: ${it.qq} | ${it.time} | IP: ${it.ip}</div>
+      </div>
+    `;
+    w.appendChild(d);
+    if(isLogin){
+      const el=document.getElementById(`act_${idx}`);
+      el.style.display="flex";
+      el.querySelector(".act-del").onclick=()=>{if(!isLogin)return;msgList.splice(idx,1);syncData();renderMsg();};
+      el.querySelector(".act-block").onclick=()=>{
+        if(!isLogin)return;
+        if(blackList.some(b=>b.qq===it.qq&&b.ip===it.ip))return alert("已拉黑过");
+        blackList.push({qq:it.qq,ip:it.ip});
+        syncBlack();
+        renderAll();
+      };
+      el.querySelector(".act-top").onclick=()=>{if(!isLogin)return;it.isTop=!it.isTop;syncData();renderMsg();};
+      el.querySelector(".act-edit").onclick=()=>openEdit(idx);
+    }
+  });
+}
+
+function renderBlackList(){
+  const el=document.getElementById("blackList");el.innerHTML="";
+  if(!blackList.length){el.innerHTML="<div style='text-align:center;color:#999;padding:10px'>暂无拉黑</div>";return;}
+  blackList.forEach((it,i)=>{
+    const d=document.createElement("div");d.className="black-item";
+    d.innerHTML=`<span>QQ: ${it.qq} | IP: ${it.ip}</span><button class="unblock" onclick="unblock(${i})">解禁</button>`;
+    el.appendChild(d);
+  });
+}
+function unblock(i){blackList.splice(i,1);syncBlack();renderAll();}
+function renderAll(){renderMsg();renderBlackList();}
+
+// 启动
+(async()=>{
+  config     = await giteeGet(FILE_CONFIG);
+  msgList    = await giteeGet(FILE_DATA);
+  blackList  = await giteeGet(FILE_BLACK);
+  pushConfig = await giteeGet(FILE_PUSH); // 加载推送配置
+  userIP     = await getRealIP();
+  refreshAllWordTip();
+  await checkUrlPush();
+  renderAll();
+})();
+</script>
+</body>
+</html>
