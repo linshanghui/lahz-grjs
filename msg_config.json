@@ -1,5 +1,5 @@
 {
-  "minWords": 5,
+  "minWords": 2,
   "maxWords": 200,
   "nickMaxWords": 20,
   "cooldown": 30,
