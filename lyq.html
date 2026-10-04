@@ -377,16 +377,6 @@ textarea {
       <button class="backend-close" onclick="closeBackend()">×</button>
     </div>
     <div class="backend-body">
-
-      <div class="section">
-        <h4>🔑 码云令牌（access_token）</h4>
-        <div class="set-row">
-          <span>个人访问令牌</span>
-          <input type="password" id="giteeToken" placeholder="粘贴你的码云令牌">
-        </div>
-        <button class="save-btn" onclick="saveGiteeToken()">保存令牌</button>
-      </div>
-
       <div class="section">
         <h4>基础设置</h4>
         <div class="set-row"><span>最少字数</span><input id="set_min"></div>
@@ -447,18 +437,15 @@ textarea {
 </div>
 
 <script>
-// ====================== Cloudflare Worker地址（替换码云）======================
+// 已经填入你的Worker地址
 const WORKER_API = "https://spring-tree-e0ee.19519719512-a96.workers.dev";
-// =====================================================================
 
-let GITEE_TOKEN = localStorage.getItem('giteeToken') || "";
+let adminPwd = localStorage.getItem('adminPwd') || "123456";
+localStorage.setItem('adminPwd', adminPwd);
 
 const FILE_CONFIG = "msg_config.json";
 const FILE_DATA   = "msg_data.json";
 const FILE_BLACK  = "msg_black.json";
-
-let adminPwd = localStorage.getItem('adminPwd') || "123456";
-localStorage.setItem("adminPwd", adminPwd);
 
 const defaultConfig = {
   minWords: 5,
@@ -486,15 +473,7 @@ let editRealIndex = -1;
 const QMSG_KEY = "bccdf562f8785c98f39b6cd53fe6ac32";
 const tagColors = ["#13c2c2","#722ed1","#eb2f96","#1890ff","#52c41a","#faad14","#f5222d","#fa8c16"];
 
-function saveGiteeToken() {
-  const val = document.getElementById('giteeToken').value.trim();
-  if (!val) return alert('请输入令牌');
-  GITEE_TOKEN = val;
-  localStorage.setItem('giteeToken', val);
-  alert('✅ 令牌已保存');
-}
-
-// ========== 【修改点】把原来giteeGet替换成Worker读取KV，其余逻辑完全不动 ==========
+// Worker读取
 async function giteeGet(file) {
   try {
     const r = await fetch(`${WORKER_API}/?file=${encodeURIComponent(file)}`);
@@ -509,7 +488,7 @@ async function giteeGet(file) {
   }
 }
 
-// ========== 【修改点】把原来giteePut替换成Worker写入KV ==========
+// Worker写入
 async function giteePut(file, data) {
   try {
     const resPut = await fetch(`${WORKER_API}/?file=${encodeURIComponent(file)}`, {
@@ -663,7 +642,6 @@ async function checkUrlPush(){
   }
 }
 
-// ============== 已替换为你要的 uapis.cn QQ接口 ==============
 async function getQQInfo(q) {
   if (!q || !/^\d{5,12}$/.test(q)) {
     return { nickname: "热心网友" };
@@ -671,7 +649,6 @@ async function getQQInfo(q) {
   try {
     const res = await fetch(`https://uapis.cn/api/v1/social/qq/userinfo?qq=${q}`);
     const data = await res.json();
-    // 按你这个接口常见返回结构适配
     const name = data.nickname || data.data?.nickname || "QQ用户";
     return { nickname: name };
   } catch (e) {
@@ -751,7 +728,6 @@ function openBackend(){
   }
   document.getElementById("backendModal").style.display="flex";
   document.getElementById("autoPushUrl").innerText=genAutoPushUrl();
-  document.getElementById("giteeToken").value = GITEE_TOKEN;
   loadConfigToForm();
   renderAll();
 }
@@ -773,7 +749,7 @@ function loadConfigToForm(){
 
 function saveSetting(){
   config.minWords=+document.getElementById("set_min").value||5;
-  config.maxWords=+document.getElementById("set_max").value||20;
+  config.maxWords=+document.getElementById("set_max").value||200;
   config.nickMaxWords=+document.getElementById("set_nick_max").value||20;
   config.cooldown=+document.getElementById("set_cd").value||30;
   config.pushTitle=document.getElementById("set_push_title").value.trim()||defaultConfig.pushTitle;
@@ -847,9 +823,9 @@ function renderMsg(){
   }
 
   sorted.forEach((item)=>{
-    const realIdx = msgList.findIndex(m=> 
-      m.qq === item.qq && 
-      m.time === item.time && 
+    const realIdx = msgList.findIndex(m=>
+      m.qq === item.qq &&
+      m.time === item.time &&
       m.content === item.content
     );
     if(realIdx === -1) return;
