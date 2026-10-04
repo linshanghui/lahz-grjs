@@ -447,23 +447,18 @@ textarea {
 </div>
 
 <script>
-// ====================== 码云基础配置（只填这3个）======================
-const GITEE_OWNER    = "linshanghui";
-const GITEE_REPO     = "lahz-grjs";
-const GITEE_BRANCH   = "main";
+// ====================== Cloudflare Worker地址（替换码云）======================
+const WORKER_API = "https://spring-tree-e0ee.19519719512-a96.workers.dev";
 // =====================================================================
 
 let GITEE_TOKEN = localStorage.getItem('giteeToken') || "";
-
-const GITEE_RAW = `https://gitee.com/${GITEE_OWNER}/${GITEE_REPO}/raw/${GITEE_BRANCH}`;
-const GITEE_API = `https://gitee.com/api/v1/repos/${GITEE_OWNER}/${GITEE_REPO}`;
 
 const FILE_CONFIG = "msg_config.json";
 const FILE_DATA   = "msg_data.json";
 const FILE_BLACK  = "msg_black.json";
 
 let adminPwd = localStorage.getItem('adminPwd') || "123456";
-localStorage.setItem('adminPwd', adminPwd);
+localStorage.setItem("adminPwd", adminPwd);
 
 const defaultConfig = {
   minWords: 5,
@@ -499,9 +494,10 @@ function saveGiteeToken() {
   alert('✅ 令牌已保存');
 }
 
+// ========== 【修改点】把原来giteeGet替换成Worker读取KV，其余逻辑完全不动 ==========
 async function giteeGet(file) {
   try {
-    const r = await fetch(`${GITEE_RAW}/${file}`);
+    const r = await fetch(`${WORKER_API}/?file=${encodeURIComponent(file)}`);
     if (!r.ok) throw new Error(`拉取 ${file} 失败`);
     const data = await r.json();
     localStorage.setItem(file, JSON.stringify(data));
@@ -513,34 +509,20 @@ async function giteeGet(file) {
   }
 }
 
+// ========== 【修改点】把原来giteePut替换成Worker写入KV ==========
 async function giteePut(file, data) {
-  if (!GITEE_TOKEN) {
-    alert('请先在管理后台填写并保存码云令牌');
-    return false;
-  }
   try {
-    const resGet = await fetch(`${GITEE_API}/contents/${file}?access_token=${GITEE_TOKEN}&ref=${GITEE_BRANCH}`);
-    const sha = resGet.ok ? (await resGet.json()).sha : null;
-
-    const body = {
-      access_token: GITEE_TOKEN,
-      content: btoa(unescape(encodeURIComponent(JSON.stringify(data, null, 2)))),
-      message: "update " + file,
-      branch: GITEE_BRANCH
-    };
-    if (sha) body.sha = sha;
-
-    const resPut = await fetch(`${GITEE_API}/contents/${file}`, {
+    const resPut = await fetch(`${WORKER_API}/?file=${encodeURIComponent(file)}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body)
+      body: JSON.stringify(data)
     });
-
-    if (resPut.ok) {
+    const ret = await resPut.json();
+    if(ret.ok){
       localStorage.setItem(file, JSON.stringify(data));
       return true;
-    } else {
-      alert(file + " 保存失败，请检查令牌权限");
+    }else{
+      alert(file + " 保存失败：" + ret.msg);
       return false;
     }
   } catch (e) {
@@ -791,7 +773,7 @@ function loadConfigToForm(){
 
 function saveSetting(){
   config.minWords=+document.getElementById("set_min").value||5;
-  config.maxWords=+document.getElementById("set_max").value||200;
+  config.maxWords=+document.getElementById("set_max").value||20;
   config.nickMaxWords=+document.getElementById("set_nick_max").value||20;
   config.cooldown=+document.getElementById("set_cd").value||30;
   config.pushTitle=document.getElementById("set_push_title").value.trim()||defaultConfig.pushTitle;
