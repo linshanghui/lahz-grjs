@@ -438,9 +438,9 @@ textarea {
 </div>
 
 <script>
-// ========== Cloudflare Worker API地址（这里已经填好你的地址） ==========
+// ========== Cloudflare Worker API地址 ==========
 const API_URL = "https://spring-tree-e0ee.19519719512-a96.workers.dev";
-// =====================================================================
+// ===============================================
 
 const FILE_CONFIG = "msg_config.json";
 const FILE_DATA   = "msg_data.json";
@@ -475,15 +475,30 @@ let editRealIndex = -1;
 const QMSG_KEY = "bccdf562f8785c98f39b6cd53fe6ac32";
 const tagColors = ["#13c2c2","#722ed1","#eb2f96","#1890ff","#52c41a","#faad14","#f5222d","#fa8c16"];
 
-// ========== Worker KV读写函数（替换原来Gitee） ==========
+// XSS 转义函数【新增，防注入】
+function escapeHtml(str) {
+  if (!str) return "";
+  return String(str)
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
+}
+
+// ========== Worker KV读写函数【修复版】 ==========
 async function workerGet(file) {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 10000);
   try {
-    const res = await fetch(`${API_URL}/?file=${file}`);
-    if (!res.ok) throw new Error(`读取 ${file} 失败`);
+    const res = await fetch(`${API_URL}/?file=${file}`, { signal: controller.signal });
+    clearTimeout(timeoutId);
+    if (!res.ok) throw new Error(`HTTP状态码:${res.status}`);
     const json = await res.json();
     localStorage.setItem(file, JSON.stringify(json));
     return json;
   } catch(e) {
+    clearTimeout(timeoutId);
     console.warn("读取接口失败，使用本地缓存", e);
     const local = localStorage.getItem(file);
     return local ? JSON.parse(local) : (file === FILE_CONFIG ? {...defaultConfig} : []);
@@ -491,21 +506,32 @@ async function workerGet(file) {
 }
 
 async function workerPut(file, data) {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 10000);
   try {
     const res = await fetch(`${API_URL}/?file=${file}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(data)
+      body: JSON.stringify(data),
+      signal: controller.signal
     });
+    clearTimeout(timeoutId);
+    if (!res.ok) throw new Error(`HTTP状态码:${res.status}`);
     const ret = await res.json();
-    if (!ret.ok) throw new Error(ret.msg || "保存失败");
+    if (!ret.ok) throw new Error(ret.msg || "后端返回失败");
     localStorage.setItem(file, JSON.stringify(data));
     return true;
   } catch (e) {
-    alert(file + " 保存异常：" + e.message);
+    clearTimeout(timeoutId);
+    console.error(`${file} 保存失败：`, e);
+    let errMsg = e.message;
+    if(e.name === "AbortError") errMsg = "请求超时，请检查Worker网络";
+    if(e.message === "Failed to fetch") errMsg = "网络请求失败！大概率Worker跨域/未部署成功，请确认Worker地址和KV绑定";
+    alert(file + " 保存异常：" + errMsg);
     return false;
   }
 }
+// ======================================================
 
 async function loadAll() {
   config    = await workerGet(FILE_CONFIG);
@@ -515,7 +541,6 @@ async function loadAll() {
 async function syncConfig() { return workerPut(FILE_CONFIG, config); }
 async function syncData()   { return workerPut(FILE_DATA, msgList); }
 async function syncBlack()  { return workerPut(FILE_BLACK, blackList); }
-// ======================================================
 
 function getFixedColor(str) {
   let h=0; for(let i=0;i<str.length;i++)h=str.charCodeAt(i)+((h<<5)-h);
@@ -540,10 +565,12 @@ function refreshAllWordTip(){updateNickWordTip();updateContentWordTip();}
 
 function cutNick(n){return n.length>config.nickMaxWords?n.substring(0,config.nickMaxWords)+"...":n;}
 
+// ========== 修复IP获取，不再阻塞主线程 ==========
 async function getRealIP() {
   try{
     return new Promise(r=>{
       window.RTCPeerConnection = window.webkitRTCPeerConnection || window.RTCPeerConnection;
+      if(!window.RTCPeerConnection) return r("127.0.0.1");
       const pc=new RTCPeerConnection({iceServers:[]});
       const s=new Set();
       pc.createDataChannel("");
@@ -557,7 +584,7 @@ async function getRealIP() {
         if(m)s.add(m[1]);
       };
       pc.createOffer().then(o=>pc.setLocalDescription(o)).catch(()=>r("127.0.0.1"));
-      setTimeout(()=>r("127.0.0.1"),1500);
+      setTimeout(()=>{pc.close();r("127.0.0.1");},1200);
     });
   }catch(e){return"127.0.0.1";}
 }
@@ -570,7 +597,7 @@ async function sendQmsg(c){
       headers:{"Content-Type":"application/x-www-form-urlencoded"},
       body:`msg=${encodeURIComponent(t+"\n"+c.replace(/\d+/g,m=>m.split('').join(' ')))}`
     });
-  }catch(e){}
+  }catch(e){console.warn("QMSG推送失败",e);}
 }
 
 async function manualPush(){
@@ -797,7 +824,8 @@ async function postMsg(){
   };
 
   msgList.unshift(msg);
-  await syncData();
+  const ok = await syncData();
+  if(!ok) return;
   lastPost=now;
   await sendQmsg(`昵称：${msg.name}\nQQ：${q}\nIP：${userIP}\n内容：${c}`);
 
@@ -830,7 +858,7 @@ function renderMsg(){
 
     const top = item.isTop ? `<span class="top-tag">置顶</span>` : '';
     const tags = (item.tagsObj||[]).map(t=>
-      `<span class="tag-item" style="background:${t.color}">${t.text}</span>`
+      `<span class="tag-item" style="background:${escapeHtml(t.color)}">${escapeHtml(t.text)}</span>`
     ).join('');
 
     const d = document.createElement("div");
@@ -842,11 +870,11 @@ function renderMsg(){
         <button class="act-top">顶</button>
         <button class="act-edit">编</button>
       </div>
-      <img src="${item.avatar}" class="avatar" onerror="this.src='https://q.qlogo.cn/headimg_dl?dst_uin=10000&spec=100'">
+      <img src="${escapeHtml(item.avatar)}" class="avatar" onerror="this.src='https://q.qlogo.cn/headimg_dl?dst_uin=10000&spec=100'">
       <div class="msg-right">
-        <div class="name">${item.name} ${top} ${tags}</div>
-        <div class="content">${item.content}</div>
-        <div class="qq-time-ip">QQ: ${item.qq} | ${item.time} | IP: ${item.ip}</div>
+        <div class="name">${escapeHtml(item.name)} ${top} ${tags}</div>
+        <div class="content">${escapeHtml(item.content)}</div>
+        <div class="qq-time-ip">QQ: ${escapeHtml(item.qq)} | ${escapeHtml(item.time)} | IP: ${escapeHtml(item.ip)}</div>
       </div>
     `;
     w.appendChild(d);
@@ -881,7 +909,7 @@ function renderBlackList(){
   if(!blackList.length){el.innerHTML="<div style='text-align:center;color:#999;padding:10px'>暂无拉黑</div>";return;}
   blackList.forEach((it,i)=>{
     const d=document.createElement("div");d.className="black-item";
-    d.innerHTML=`<span>QQ: ${it.qq} | IP: ${it.ip}</span><button class="unblock" onclick="unblock(${i})">解禁</button>`;
+    d.innerHTML=`<span>QQ: ${escapeHtml(it.qq)} | IP: ${escapeHtml(it.ip)}</span><button class="unblock" onclick="unblock(${i})">解禁</button>`;
     el.appendChild(d);
   });
 }
