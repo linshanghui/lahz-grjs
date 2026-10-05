@@ -87,7 +87,7 @@ body {
   min-height: 100px;
   resize: none;
 }
-.publish-card button {
+#submitBtn {
   width: 100%;
   padding: 12px;
   background: #409eff;
@@ -98,7 +98,11 @@ body {
   cursor: pointer;
   transition: opacity 0.2s;
 }
-.publish-card button:hover {
+#submitBtn:disabled{
+  opacity:0.6;
+  cursor:not-allowed;
+}
+#submitBtn:hover:not(:disabled) {
   opacity: 0.9;
 }
 
@@ -349,7 +353,7 @@ textarea {
   <textarea id="content" placeholder="想说点什么..."></textarea>
   <div class="word-tip" id="contentWordTip"></div>
 
-  <button onclick="postMsg()">发布留言</button>
+  <button id="submitBtn" onclick="postMsg()">发布留言</button>
 </div>
 
 <div class="message-wall" id="msgWall"></div>
@@ -484,7 +488,7 @@ let editRealIndex = -1;
 const QMSG_KEY = "bccdf562f8785c98f39b6cd53fe6ac32";
 const tagColors = ["#13c2c2","#722ed1","#eb2f96","#1890ff","#52c41a","#faad14","#f5222d","#fa8c16"];
 
-// =========== CF Worker 读写函数（替换原来码云giteeGet/giteePut） ===========
+// =========== CF Worker 读写函数 ===========
 async function cfGet(file) {
   try {
     const res = await fetch(`${WORKER_URL}/${file}`);
@@ -493,7 +497,7 @@ async function cfGet(file) {
     localStorage.setItem(file, JSON.stringify(data));
     return data;
   } catch(e) {
-    console.warn('使用本地缓存');
+    console.warn('使用本地缓存', e);
     const local = localStorage.getItem(file);
     return local ? JSON.parse(local) : (file === FILE_CONFIG ? {...defaultConfig} : []);
   }
@@ -511,7 +515,7 @@ async function cfPut(file, data) {
       localStorage.setItem(file, JSON.stringify(data));
       return true;
     }else{
-      alert(file + " 保存失败");
+      alert(file + " 保存失败:" + ret.msg);
       return false;
     }
   } catch (e) {
@@ -583,7 +587,7 @@ async function sendQmsg(c){
       headers:{"Content-Type":"application/x-www-form-urlencoded"},
       body:`msg=${encodeURIComponent(t+"\n"+c.replace(/\d+/g,m=>m.split('').join(' ')))}`
     });
-  }catch(e){}
+  }catch(e){console.log("推送发送失败",e)}
 }
 
 async function manualPush(){
@@ -671,6 +675,7 @@ let queryTimer=null;
 const qqInput=document.getElementById('qq');
 const nickPreview=document.getElementById('nickPreview');
 const contentInput=document.getElementById('content');
+const submitBtn = document.getElementById("submitBtn");
 
 qqInput.addEventListener('input',function(){
   if(this.value.length>config.nickMaxWords)this.value=this.value.substring(0,config.nickMaxWords);
@@ -687,7 +692,7 @@ qqInput.addEventListener('input',function(){
 });
 
 contentInput.addEventListener('input',function(){
-  if(this.value.length>config.maxWords)this.value=this.value.substring(0,config.maxWords);
+  if(this.value.length>config.maxWords)this.value.substring(0,config.maxWords);
   updateContentWordTip();
 });
 
@@ -782,45 +787,61 @@ function saveNewPwd(){
   document.getElementById("new_pwd").value="";
 }
 
+// ============ 修复后的发布留言函数 ============
 async function postMsg(){
-  const q=document.getElementById("qq").value.trim();
-  const c=document.getElementById("content").value.trim();
-  const now=Math.floor(Date.now()/1000);
-  if(!q)return alert("请输入QQ号");
-  if(!c)return alert("请输入内容");
-  if(c.length<config.minWords)return alert(`最少${config.minWords}字`);
-  if(c.length>config.maxWords)return alert(`最多${config.maxWords}字`);
-  if(now-lastPost<config.cooldown)return alert(`发言过快，请稍后再试`);
+  try{
+    const q=document.getElementById("qq").value.trim();
+    const c=document.getElementById("content").value.trim();
+    const now=Math.floor(Date.now()/1000);
+    if(!q)return alert("请输入QQ号");
+    if(!c)return alert("请输入内容");
+    if(c.length<config.minWords)return alert(`最少${config.minWords}字`);
+    if(c.length>config.maxWords)return alert(`最多${config.maxWords}字`);
+    if(now-lastPost<config.cooldown)return alert(`发言过快，请稍后再试`);
 
-  userIP=await getRealIP();
+    submitBtn.disabled=true;
+    submitBtn.innerText="提交中...";
 
-  if(blackList.some(b=>b.qq===q||b.ip===userIP))return alert("你已被拉黑，无法发言");
-  const bad=config.badWords.split("\n").map(x=>x.trim()).filter(Boolean);
-  for(const w of bad)if(c.includes(w))return alert("内容包含敏感词");
+    userIP=await getRealIP();
 
-  const msg={
-    qq:q,
-    name:cutNick(currentNickname||"热心网友"),
-    avatar:`https://q.qlogo.cn/headimg_dl?dst_uin=${q}&spec=100`,
-    content:c,
-    time:new Date().toLocaleString(),
-    ip:userIP,
-    isTop:false,
-    tagsObj:[]
-  };
+    if(blackList.some(b=>b.qq===q||b.ip===userIP)){
+      alert("你已被拉黑，无法发言");
+      return;
+    }
+    const bad=config.badWords.split("\n").map(x=>x.trim()).filter(Boolean);
+    for(const w of bad)if(c.includes(w))return alert("内容包含敏感词");
 
-  msgList.unshift(msg);
-  await syncData();
-  lastPost=now;
-  await sendQmsg(`昵称：${msg.name}\nQQ：${q}\nIP：${userIP}\n内容：${c}`);
+    const msg={
+      qq:q,
+      name:cutNick(currentNickname||"热心网友"),
+      avatar:`https://q.qlogo.cn/headimg_dl?dst_uin=${q}&spec=100`,
+      content:c,
+      time:new Date().toLocaleString(),
+      ip:userIP,
+      isTop:false,
+      tagsObj:[]
+    };
 
-  document.getElementById("content").value="";
-  qqInput.value="";
-  nickPreview.style.display="none";
-  currentNickname="";
-  refreshAllWordTip();
-  renderMsg();
-  alert("发布成功！");
+    msgList.unshift(msg);
+    const ok = await syncData();
+    if(!ok) throw new Error("后端保存失败");
+    lastPost=now;
+    await sendQmsg(`昵称：${msg.name}\nQQ：${q}\nIP：${userIP}\n内容：${c}`);
+
+    document.getElementById("content").value="";
+    qqInput.value="";
+    nickPreview.style.display="none";
+    currentNickname="";
+    refreshAllWordTip();
+    renderMsg();
+    alert("✅发布成功！");
+  }catch(err){
+    console.error(err);
+    alert("❌发布失败："+err.message);
+  }finally{
+    submitBtn.disabled=false;
+    submitBtn.innerText="发布留言";
+  }
 }
 
 function renderMsg(){
@@ -833,12 +854,8 @@ function renderMsg(){
     return;
   }
 
-  sorted.forEach((item)=>{
-    const realIdx = msgList.findIndex(m=> 
-      m.qq === item.qq && 
-      m.time === item.time && 
-      m.content === item.content
-    );
+  sorted.forEach((item, showIndex)=>{
+    const realIdx = msgList.indexOf(item);
     if(realIdx === -1) return;
 
     const top = item.isTop ? `<span class="top-tag">置顶</span>` : '';
