@@ -638,15 +638,15 @@ async function checkUrlPush(){
   }
 }
 
-// ========= 修改：调用Worker自建/api/getqq接口 =========
+// ============== uapis.cn QQ昵称接口 ==============
 async function getQQInfo(q) {
   if (!q || !/^\d{5,12}$/.test(q)) {
-    return { nickname: "热心网友" };
+    return { nickname: "QQ用户" };
   }
   try {
-    const res = await fetch(`${WORKER_URL}/api/getqq?qq=${q}`);
+    const res = await fetch(`https://uapis.cn/api/v1/social/qq/userinfo?qq=${q}`);
     const data = await res.json();
-    const name = data.nickname || "QQ用户";
+    const name = data.nickname || data.data?.nickname || "QQ用户";
     return { nickname: name };
   } catch (e) {
     return { nickname: "QQ用户" };
@@ -654,6 +654,7 @@ async function getQQInfo(q) {
 }
 
 let queryTimer=null;
+let fetchingNick = false;
 const qqInput=document.getElementById('qq');
 const nickPreview=document.getElementById('nickPreview');
 const contentInput=document.getElementById('content');
@@ -666,14 +667,17 @@ qqInput.addEventListener('input',function(){
   if(q.length<5)return;
   clearTimeout(queryTimer);
   queryTimer=setTimeout(async()=>{
+    fetchingNick = true;
     nickPreview.textContent="正在获取昵称...";nickPreview.style.display='block';
-    const i=await getQQInfo(q);currentNickname=i.nickname;
+    const i=await getQQInfo(q);
+    currentNickname=i.nickname;
     nickPreview.textContent=`当前昵称：${cutNick(i.nickname)}`;
+    fetchingNick = false;
   },600);
 });
 
 contentInput.addEventListener('input',function(){
-  if(this.value.length>config.maxWords)this.value=this.value.substring(0,config.maxWords);
+  if(this.value.length>config.maxWords)this.value.substring(0,config.maxWords);
   updateContentWordTip();
 });
 
@@ -768,7 +772,6 @@ function saveNewPwd(){
   document.getElementById("new_pwd").value="";
 }
 
-// ========= 修改：发布留言时强制重新拉取昵称 =========
 async function postMsg(){
   const q=document.getElementById("qq").value.trim();
   const c=document.getElementById("content").value.trim();
@@ -779,19 +782,25 @@ async function postMsg(){
   if(c.length>config.maxWords)return alert(`最多${config.maxWords}字`);
   if(now-lastPost<config.cooldown)return alert(`发言过快，请稍后再试`);
 
+  // 等待昵称获取完成
+  while(fetchingNick){
+    await new Promise(resolve=>setTimeout(resolve,100));
+  }
+  // 如果昵称仍为空，重新拉取
+  if(!currentNickname){
+    const info = await getQQInfo(q);
+    currentNickname = info.nickname;
+  }
+
   userIP=await getRealIP();
 
   if(blackList.some(b=>b.qq===q||b.ip===userIP))return alert("你已被拉黑，无法发言");
   const bad=config.badWords.split("\n").map(x=>x.trim()).filter(Boolean);
   for(const w of bad)if(c.includes(w))return alert("内容包含敏感词");
 
-  // 提交时再次调用Worker接口获取昵称，保证数据准确
-  const qqInfo = await getQQInfo(q);
-  currentNickname = qqInfo.nickname;
-
   const msg={
     qq:q,
-    name:cutNick(currentNickname||"热心网友"),
+    name:cutNick(currentNickname||"QQ用户"),
     avatar:`https://q.qlogo.cn/headimg_dl?dst_uin=${q}&spec=100`,
     content:c,
     time:new Date().toLocaleString(),
