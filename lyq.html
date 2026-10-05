@@ -379,12 +379,12 @@ textarea {
     <div class="backend-body">
 
       <div class="section">
-        <h4>🔧 Worker地址（无需码云令牌）</h4>
+        <h4>☁️ Cloudflare Worker地址</h4>
         <div class="set-row">
-          <span>Worker接口地址</span>
-          <input type="text" id="workerApiUrl" value="https://lyq.lahz.cn">
+          <span>接口地址（固定）</span>
+          <input value="https://lyq.lahz.cn" readonly>
         </div>
-        <button class="save-btn" onclick="saveWorkerUrl()">保存地址</button>
+        <div style="color:#666;font-size:12px;margin-top:4px">已移除码云令牌，不再需要Gitee token</div>
       </div>
 
       <div class="section">
@@ -447,11 +447,9 @@ textarea {
 </div>
 
 <script>
-// ====================== Worker接口地址 ======================
-let WORKER_API = localStorage.getItem('workerApiUrl') || "https://lyq.lahz.cn";
-// ==========================================================
-
-let GITEE_TOKEN = localStorage.getItem('giteeToken') || "";
+// ====================== Cloudflare Worker 配置 ======================
+const WORKER_URL = "https://lyq.lahz.cn";
+// =====================================================================
 
 const FILE_CONFIG = "msg_config.json";
 const FILE_DATA   = "msg_data.json";
@@ -486,20 +484,12 @@ let editRealIndex = -1;
 const QMSG_KEY = "bccdf562f8785c98f39b6cd53fe6ac32";
 const tagColors = ["#13c2c2","#722ed1","#eb2f96","#1890ff","#52c41a","#faad14","#f5222d","#fa8c16"];
 
-function saveWorkerUrl() {
-  const val = document.getElementById('workerApiUrl').value.trim();
-  if (!val) return alert('请填写Worker地址');
-  WORKER_API = val;
-  localStorage.setItem('workerApiUrl', val);
-  alert('✅ Worker地址已保存');
-}
-
-// ========== 替换：原来giteeGet，改为请求Cloudflare Worker ==========
-async function giteeGet(file) {
+// =========== CF Worker 读写函数（替换原来码云giteeGet/giteePut） ===========
+async function cfGet(file) {
   try {
-    const r = await fetch(`${WORKER_API}/?file=${file}`);
-    if (!r.ok) throw new Error(`拉取 ${file} 失败`);
-    const data = await r.json();
+    const res = await fetch(`${WORKER_URL}/${file}`);
+    if (!res.ok) throw new Error(`读取 ${file} 失败`);
+    const data = await res.json();
     localStorage.setItem(file, JSON.stringify(data));
     return data;
   } catch(e) {
@@ -509,19 +499,19 @@ async function giteeGet(file) {
   }
 }
 
-// ========== 替换：原来giteePut，改为请求Cloudflare Worker ==========
-async function giteePut(file, data) {
+async function cfPut(file, data) {
   try {
-    const resPut = await fetch(`${WORKER_API}/?file=${file}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(data)
+    const res = await fetch(`${WORKER_URL}/${file}`, {
+      method:"PUT",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify(data)
     });
-    if (resPut.ok) {
+    const ret = await res.json();
+    if(ret.ok){
       localStorage.setItem(file, JSON.stringify(data));
       return true;
-    } else {
-      alert(file + " 保存失败，请检查Worker");
+    }else{
+      alert(file + " 保存失败");
       return false;
     }
   } catch (e) {
@@ -530,15 +520,15 @@ async function giteePut(file, data) {
   }
 }
 
-async function loadAllFromGitee() {
-  config    = await giteeGet(FILE_CONFIG);
-  msgList   = await giteeGet(FILE_DATA);
-  blackList = await giteeGet(FILE_BLACK);
+async function loadAllFromCFWorker(){
+  config    = await cfGet(FILE_CONFIG);
+  msgList   = await cfGet(FILE_DATA);
+  blackList = await cfGet(FILE_BLACK);
 }
 
-async function syncConfig() { return giteePut(FILE_CONFIG, config); }
-async function syncData()   { return giteePut(FILE_DATA, msgList); }
-async function syncBlack()  { return giteePut(FILE_BLACK, blackList); }
+async function syncConfig() { return cfPut(FILE_CONFIG, config); }
+async function syncData()   { return cfPut(FILE_DATA, msgList); }
+async function syncBlack()  { return cfPut(FILE_BLACK, blackList); }
 
 function getFixedColor(str) {
   let h=0; for(let i=0;i<str.length;i++)h=str.charCodeAt(i)+((h<<5)-h);
@@ -611,7 +601,7 @@ function savePushConfigOnly(){
   config.pushHour = h;
   config.pushMin = m;
   syncConfig();
-  alert('✅ 推送配置已保存');
+  alert('✅ 推送配置已保存到 msg_config.json');
 }
 
 function startDailyPush(){
@@ -662,6 +652,7 @@ async function checkUrlPush(){
   }
 }
 
+// ============== QQ信息接口 ==============
 async function getQQInfo(q) {
   if (!q || !/^\d{5,12}$/.test(q)) {
     return { nickname: "热心网友" };
@@ -748,7 +739,6 @@ function openBackend(){
   }
   document.getElementById("backendModal").style.display="flex";
   document.getElementById("autoPushUrl").innerText=genAutoPushUrl();
-  document.getElementById("workerApiUrl").value = WORKER_API;
   loadConfigToForm();
   renderAll();
 }
@@ -912,7 +902,7 @@ function unblock(i){blackList.splice(i,1);syncBlack();renderAll();}
 function renderAll(){renderMsg();renderBlackList();}
 
 (async()=>{
-  await loadAllFromGitee();
+  await loadAllFromCFWorker();
   userIP=await getRealIP();
   refreshAllWordTip();
   await checkUrlPush();
