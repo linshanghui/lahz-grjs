@@ -638,15 +638,15 @@ async function checkUrlPush(){
   }
 }
 
-// ============== uapis.cn QQ昵称接口 ==============
+// ============== 自建Worker QQ昵称接口【已替换】 ==============
 async function getQQInfo(q) {
   if (!q || !/^\d{5,12}$/.test(q)) {
-    return { nickname: "热心网友" };
+    return { nickname: "QQ用户" };
   }
   try {
-    const res = await fetch(`https://uapis.cn/api/v1/social/qq/userinfo?qq=${q}`);
+    const res = await fetch(`${WORKER_URL}/getqqnick?qq=${q}`);
     const data = await res.json();
-    const name = data.nickname || data.data?.nickname || "QQ用户";
+    const name = data.data?.name || "QQ用户";
     return { nickname: name };
   } catch (e) {
     return { nickname: "QQ用户" };
