@@ -638,15 +638,15 @@ async function checkUrlPush(){
   }
 }
 
-// ============== 自建Worker QQ昵称接口【已替换】 ==============
+// ========= 修改：调用Worker自建/api/getqq接口 =========
 async function getQQInfo(q) {
   if (!q || !/^\d{5,12}$/.test(q)) {
-    return { nickname: "QQ用户" };
+    return { nickname: "热心网友" };
   }
   try {
-    const res = await fetch(`${WORKER_URL}/getqqnick?qq=${q}`);
+    const res = await fetch(`${WORKER_URL}/api/getqq?qq=${q}`);
     const data = await res.json();
-    const name = data.data?.name || "QQ用户";
+    const name = data.nickname || "QQ用户";
     return { nickname: name };
   } catch (e) {
     return { nickname: "QQ用户" };
@@ -673,7 +673,7 @@ qqInput.addEventListener('input',function(){
 });
 
 contentInput.addEventListener('input',function(){
-  if(this.value.length>config.maxWords)this.value.substring(0,config.maxWords);
+  if(this.value.length>config.maxWords)this.value=this.value.substring(0,config.maxWords);
   updateContentWordTip();
 });
 
@@ -768,6 +768,7 @@ function saveNewPwd(){
   document.getElementById("new_pwd").value="";
 }
 
+// ========= 修改：发布留言时强制重新拉取昵称 =========
 async function postMsg(){
   const q=document.getElementById("qq").value.trim();
   const c=document.getElementById("content").value.trim();
@@ -783,6 +784,10 @@ async function postMsg(){
   if(blackList.some(b=>b.qq===q||b.ip===userIP))return alert("你已被拉黑，无法发言");
   const bad=config.badWords.split("\n").map(x=>x.trim()).filter(Boolean);
   for(const w of bad)if(c.includes(w))return alert("内容包含敏感词");
+
+  // 提交时再次调用Worker接口获取昵称，保证数据准确
+  const qqInfo = await getQQInfo(q);
+  currentNickname = qqInfo.nickname;
 
   const msg={
     qq:q,
