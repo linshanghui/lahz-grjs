@@ -389,7 +389,7 @@ textarea {
       </div>
 
       <div class="section" style="background:#e6f7ff;">
-        <h4>🔧 推送功能</h4>
+        <h4>🔧 推送功能（持久定时，关闭网页依然生效）</h4>
         <div class="set-row">
           <span>推送内容</span>
           <textarea id="pushContent" placeholder="请输入要推送的内容"></textarea>
@@ -408,14 +408,11 @@ textarea {
           </div>
         </div>
         <div style="display:flex;gap:6px;margin-top:8px;">
-          <button class="save-btn" style="background:#ff9f43;flex:1" onclick="startDailyPush()">启动每日推送</button>
-          <button class="save-btn" style="background:#f56755;flex:1" onclick="stopDailyPush()">停止每日推送</button>
-        </div>
-        <div style="margin-top:8px;">
-          <button class="save-btn" style="background:#722ed1;" onclick="savePushConfigOnly()">保存推送配置</button>
+          <button class="save-btn" style="background:#52c41a;flex:1" onclick="savePushConfig()">保存定时推送配置</button>
+          <button class="save-btn" style="background:#f56755;flex:1" onclick="stopPush()">关闭定时推送</button>
         </div>
         <div style="font-size:12px;color:#666;margin-top:8px;">
-          访问推送链接：<span id="autoPushUrl"></span>
+          💡 说明：保存配置后，**关闭网页也会自动定时推送**；关闭推送会清空推送内容。
         </div>
       </div>
 
@@ -450,7 +447,7 @@ const defaultConfig = {
   maxWords: 200,
   nickMaxWords: 20,
   cooldown: 30,
-  badWords: "操\n傻逼\n妈的\n垃圾\n滚",
+  badWords: "",
   pushTitle: "📢 留言墙有人留言啦",
   pushContent: "",
   pushHour: 22,
@@ -465,10 +462,8 @@ let lastPost = 0;
 let isLogin = false;
 let userIP = "127.0.0.1";
 let currentNickname = "";
-let dailyTimer = null;
 let editRealIndex = -1;
 
-const QMSG_KEY = "bccdf562f8785c98f39b6cd53fe6ac32";
 const tagColors = ["#13c2c2","#722ed1","#eb2f96","#1890ff","#52c41a","#faad14","#f5222d","#fa8c16"];
 
 // ========= Worker 读写函数 =========
@@ -561,86 +556,53 @@ async function getRealIP() {
   }catch(e){return"127.0.0.1";}
 }
 
-async function sendQmsg(c){
+// ========== 推送代理，全部走Worker，前端无密钥 ==========
+async function sendQmsg(title, content){
   try{
-    const t=config.pushTitle||"推送";
-    await fetch(`https://qmsg.zendee.cn/send/${QMSG_KEY}`,{
+    const res = await fetch(`${WORKER_URL}/push`,{
       method:"POST",
-      headers:{"Content-Type":"application/x-www-form-urlencoded"},
-      body:`msg=${encodeURIComponent(t+"\n"+c.replace(/\d+/g,m=>m.split('').join(' ')))}`
+      headers:{"Content-Type":"application/json"},
+      body: JSON.stringify({title, content})
     });
-  }catch(e){}
+    const ret = await res.json();
+    return ret.ok;
+  }catch(e){
+    console.error("推送代理调用失败",e);
+    return false;
+  }
 }
 
 async function manualPush(){
   const c=document.getElementById('pushContent').value.trim();
   if(!c)return alert('请输入推送内容');
-  await sendQmsg(c);
-  alert('✅ 手动推送成功！');
+  const ok = await sendQmsg(config.pushTitle, c);
+  if(ok) alert('✅ 手动推送成功！');
+  else alert('❌ 推送失败！');
 }
 
-function savePushConfigOnly(){
+// 保存定时推送配置（Worker后台执行）
+function savePushConfig(){
   const c = document.getElementById('pushContent').value.trim();
   const h = parseInt(document.getElementById('pushHour').value) || 0;
   const m = parseInt(document.getElementById('pushMin').value) || 0;
+  if(!c){alert("推送内容不能为空");return;}
   config.pushContent = c;
   config.pushHour = h;
   config.pushMin = m;
   syncConfig();
-  alert('✅ 推送配置已保存到 msg_config.json');
+  alert(`✅ 配置已保存！每日 ${h}:${m} 自动推送，关闭网页也生效`);
 }
 
-function startDailyPush(){
-  const c = document.getElementById('pushContent').value.trim();
-  const h = parseInt(document.getElementById('pushHour').value) || 0;
-  const m = parseInt(document.getElementById('pushMin').value) || 0;
-  config.pushContent = c;
-  config.pushHour = h;
-  config.pushMin = m;
+// 关闭定时推送：清空推送内容
+function stopPush(){
+  config.pushContent = "";
   syncConfig();
-
-  if(dailyTimer)clearTimeout(dailyTimer);
-  if(!c){alert('请输入推送内容');return;}
-
-  function next(){
-    const now = new Date();
-    const tar = new Date();
-    tar.setHours(config.pushHour, config.pushMin, 0, 0);
-    if(tar <= now) tar.setDate(tar.getDate()+1);
-    return tar - now;
-  }
-
-  async function job(){
-    await sendQmsg(config.pushContent);
-    schedule();
-  }
-
-  function schedule(){
-    dailyTimer = setTimeout(job, next());
-  }
-  schedule();
-  alert(`✅ 每日 ${config.pushHour}:${config.pushMin} 推送已启动`);
-}
-
-function stopDailyPush(){
-  if(dailyTimer)clearTimeout(dailyTimer);
-  dailyTimer = null;
-  alert("✅ 已停止每日推送");
-}
-
-function genAutoPushUrl(){
-  return location.origin + location.pathname + "?push=1";
-}
-
-async function checkUrlPush(){
-  if(location.search.includes('push=1')){
-    await sendQmsg(config.pushContent || '访问推送');
-  }
+  document.getElementById('pushContent').value = "";
+  alert("✅ 定时推送已关闭");
 }
 
 // ============== Worker代理获取QQ昵称 ==============
 async function getQQInfo(inputStr) {
-  // 判断纯数字QQ才去查询，其他直接返回输入文字
   if (/^[1-9]\d{4,10}$/.test(inputStr)) {
     try {
       const res = await fetch(`${WORKER_URL}/getqq?qq=${inputStr}`);
@@ -652,11 +614,9 @@ async function getQQInfo(inputStr) {
       }
     } catch (e) {
       console.log("查询QQ昵称失败", e);
-      // 接口失败兜底，直接使用QQ号作为昵称
       return { nickname: inputStr };
     }
   } else {
-    // 汉字、字母、混合字符直接原样输出
     return { nickname: inputStr };
   }
 }
@@ -674,7 +634,7 @@ qqInput.addEventListener('input',function(){
   if(q.length===0) return;
   clearTimeout(queryTimer);
   queryTimer=setTimeout(async()=>{
-    nickPreview.textContent="解析中...";nickPreview.style.display='block';
+    nickPreview.textContent="正在获取QQ头像...";nickPreview.style.display='block';
     const i=await getQQInfo(q);
     currentNickname=i.nickname;
     nickPreview.textContent=`当前昵称：${cutNick(i.nickname)}`;
@@ -733,7 +693,6 @@ function openBackend(){
     document.getElementById("logoutBtn").style.display="inline-block";
   }
   document.getElementById("backendModal").style.display="flex";
-  document.getElementById("autoPushUrl").innerText=genAutoPushUrl();
   loadConfigToForm();
   renderAll();
 }
@@ -807,7 +766,8 @@ async function postMsg(){
   msgList.unshift(msg);
   await syncData();
   lastPost=now;
-  await sendQmsg(`昵称：${msg.name}\nQQ：${q}\nIP：${userIP}\n内容：${c}`);
+  // 留言推送调用代理
+  await sendQmsg(`昵称：${msg.name}\nQQ：${q}\nIP：${userIP}\n内容：${c}`, config.pushTitle);
 
   document.getElementById("content").value="";
   qqInput.value="";
@@ -900,7 +860,6 @@ function renderAll(){renderMsg();renderBlackList();}
   await loadAll();
   userIP=await getRealIP();
   refreshAllWordTip();
-  await checkUrlPush();
   renderAll();
 })();
 </script>
