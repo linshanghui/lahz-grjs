@@ -447,7 +447,7 @@ const defaultConfig = {
   maxWords: 200,
   nickMaxWords: 20,
   cooldown: 30,
-  badWords: "",
+  badWords: "操\n傻逼\n妈的\n垃圾\n滚",
   pushTitle: "📢 留言墙有人留言啦",
   pushContent: "",
   pushHour: 22,
@@ -464,6 +464,7 @@ let userIP = "127.0.0.1";
 let currentNickname = "";
 let editRealIndex = -1;
 
+const QMSG_KEY = "b8c51760a074f7ee2a99e0e6b32ce2fce7dc0027";
 const tagColors = ["#13c2c2","#722ed1","#eb2f96","#1890ff","#52c41a","#faad14","#f5222d","#fa8c16"];
 
 // ========= Worker 读写函数 =========
@@ -556,28 +557,22 @@ async function getRealIP() {
   }catch(e){return"127.0.0.1";}
 }
 
-// ========== 推送代理，全部走Worker，前端无密钥 ==========
-async function sendQmsg(title, content){
+async function sendQmsg(c){
   try{
-    const res = await fetch(`${WORKER_URL}/push`,{
+    const t=config.pushTitle||"推送";
+    await fetch(`https://qmsg.zendee.cn/send/${QMSG_KEY}`,{
       method:"POST",
-      headers:{"Content-Type":"application/json"},
-      body: JSON.stringify({title, content})
+      headers:{"Content-Type":"application/x-www-form-urlencoded"},
+      body:`msg=${encodeURIComponent(t+"\n"+c.replace(/\d+/g,m=>m.split('').join(' ')))}`
     });
-    const ret = await res.json();
-    return ret.ok;
-  }catch(e){
-    console.error("推送代理调用失败",e);
-    return false;
-  }
+  }catch(e){}
 }
 
 async function manualPush(){
   const c=document.getElementById('pushContent').value.trim();
   if(!c)return alert('请输入推送内容');
-  const ok = await sendQmsg(config.pushTitle, c);
-  if(ok) alert('✅ 手动推送成功！');
-  else alert('❌ 推送失败！');
+  await sendQmsg(c);
+  alert('✅ 手动推送成功！');
 }
 
 // 保存定时推送配置（Worker后台执行）
@@ -634,7 +629,7 @@ qqInput.addEventListener('input',function(){
   if(q.length===0) return;
   clearTimeout(queryTimer);
   queryTimer=setTimeout(async()=>{
-    nickPreview.textContent="正在获取QQ头像...";nickPreview.style.display='block';
+    nickPreview.textContent="解析中...";nickPreview.style.display='block';
     const i=await getQQInfo(q);
     currentNickname=i.nickname;
     nickPreview.textContent=`当前昵称：${cutNick(i.nickname)}`;
@@ -766,8 +761,7 @@ async function postMsg(){
   msgList.unshift(msg);
   await syncData();
   lastPost=now;
-  // 留言推送调用代理
-  await sendQmsg(`昵称：${msg.name}\nQQ：${q}\nIP：${userIP}\n内容：${c}`, config.pushTitle);
+  await sendQmsg(`昵称：${msg.name}\nQQ：${q}\nIP：${userIP}\n内容：${c}`);
 
   document.getElementById("content").value="";
   qqInput.value="";
