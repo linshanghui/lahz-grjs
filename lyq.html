@@ -342,8 +342,7 @@ textarea {
 </div>
 
 <div class="publish-card">
-  <input id="qq" placeholder="请输入QQ号" autocomplete="off">
-  <div class="nick-preview" id="nickPreview">正在获取昵称...</div>
+  <input id="nick" placeholder="请输入昵称 / QQ号" autocomplete="off">
   <div class="word-tip" id="nickWordTip"></div>
 
   <textarea id="content" placeholder="想说点什么..."></textarea>
@@ -464,7 +463,6 @@ let blackList = [];
 let lastPost = 0;
 let isLogin = false;
 let userIP = "127.0.0.1";
-let currentNickname = "";
 let dailyTimer = null;
 let editRealIndex = -1;
 
@@ -486,6 +484,7 @@ async function workerGet(file) {
   }
 }
 
+// 注意：管理后台PUT，如果你Worker开启鉴权，这里要加上 Authorization header
 async function workerPut(file, data) {
   try {
     const res = await fetch(`${WORKER_URL}/${file}`, {
@@ -528,7 +527,7 @@ function parseTags(i){
 }
 
 function updateNickWordTip(){
-  const v=document.getElementById('qq').value.trim();
+  const v=document.getElementById('nick').value.trim();
   document.getElementById('nickWordTip').innerText=`昵称已输入 ${v.length} / ${config.nickMaxWords}`;
 }
 function updateContentWordTip(){
@@ -638,38 +637,12 @@ async function checkUrlPush(){
   }
 }
 
-// ============== uapis.cn QQ昵称接口 ==============
-async function getQQInfo(q) {
-  if (!q || !/^\d{5,12}$/.test(q)) {
-    return { nickname: "热心网友" };
-  }
-  try {
-    const res = await fetch(`https://uapis.cn/api/v1/social/qq/userinfo?qq=${q}`);
-    const data = await res.json();
-    const name = data.nickname || data.data?.nickname || "QQ用户";
-    return { nickname: name };
-  } catch (e) {
-    return { nickname: "QQ用户" };
-  }
-}
-
-let queryTimer=null;
-const qqInput=document.getElementById('qq');
-const nickPreview=document.getElementById('nickPreview');
+const nickInput=document.getElementById('nick');
 const contentInput=document.getElementById('content');
 
-qqInput.addEventListener('input',function(){
+nickInput.addEventListener('input',function(){
   if(this.value.length>config.nickMaxWords)this.value=this.value.substring(0,config.nickMaxWords);
   updateNickWordTip();
-  const q=this.value.trim();
-  nickPreview.style.display='none';currentNickname='';
-  if(q.length<5)return;
-  clearTimeout(queryTimer);
-  queryTimer=setTimeout(async()=>{
-    nickPreview.textContent="正在获取昵称...";nickPreview.style.display='block';
-    const i=await getQQInfo(q);currentNickname=i.nickname;
-    nickPreview.textContent=`当前昵称：${cutNick(i.nickname)}`;
-  },600);
 });
 
 contentInput.addEventListener('input',function(){
@@ -683,7 +656,7 @@ function openEdit(realIdx){
   if(!it)return;
   editRealIndex=realIdx;
   document.getElementById('edit_name').value=it.name||"";
-  document.getElementById('edit_qq').value=it.qq;
+  document.getElementById('edit_qq').value=it.qq||"";
   document.getElementById('edit_time').value=it.time;
   document.getElementById('edit_ip').value=it.ip;
   document.getElementById('edit_content').value=it.content;
@@ -700,7 +673,7 @@ function saveEdit(){
   const ip=document.getElementById('edit_ip').value.trim();
   const c=document.getElementById('edit_content').value.trim();
   const ts=document.getElementById('edit_tags').value.trim();
-  if(!q||!c)return alert('QQ和内容不能为空');
+  if(!c)return alert('内容不能为空');
   const tags=parseTags(ts);
   const it=msgList[editRealIndex];
   it.name=n||"热心网友";
@@ -709,7 +682,8 @@ function saveEdit(){
   it.ip=ip;
   it.content=c;
   it.tagsObj=tags;
-  it.avatar=`https://q.qlogo.cn/headimg_dl?dst_uin=${q}&spec=100`;
+  if(q) it.avatar=`https://q.qlogo.cn/headimg_dl?dst_uin=${q}&spec=100`;
+  else it.avatar = "";
   syncData();
   closeEdit();
   renderMsg();
@@ -769,10 +743,10 @@ function saveNewPwd(){
 }
 
 async function postMsg(){
-  const q=document.getElementById("qq").value.trim();
+  const nickInputVal=document.getElementById("nick").value.trim();
   const c=document.getElementById("content").value.trim();
   const now=Math.floor(Date.now()/1000);
-  if(!q)return alert("请输入QQ号");
+  if(!nickInputVal)return alert("请输入昵称/QQ号");
   if(!c)return alert("请输入内容");
   if(c.length<config.minWords)return alert(`最少${config.minWords}字`);
   if(c.length>config.maxWords)return alert(`最多${config.maxWords}字`);
@@ -780,30 +754,25 @@ async function postMsg(){
 
   userIP=await getRealIP();
 
-  if(blackList.some(b=>b.qq===q||b.ip===userIP))return alert("你已被拉黑，无法发言");
-  const bad=config.badWords.split("\n").map(x=>x.trim()).filter(Boolean);
-  for(const w of bad)if(c.includes(w))return alert("内容包含敏感词");
+  // 提交给后端Worker /submit_msg
+  const res = await fetch(`${WORKER_URL}/submit_msg`,{
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({nick:nickInputVal,content:c})
+  })
+  const ret = await res.json();
+  if(!ret.ok){
+    alert(ret.msg);
+    return;
+  }
 
-  const msg={
-    qq:q,
-    name:cutNick(currentNickname||"热心网友"),
-    avatar:`https://q.qlogo.cn/headimg_dl?dst_uin=${q}&spec=100`,
-    content:c,
-    time:new Date().toLocaleString(),
-    ip:userIP,
-    isTop:false,
-    tagsObj:[]
-  };
-
-  msgList.unshift(msg);
-  await syncData();
+  // 后端返回成功，重新加载留言列表
   lastPost=now;
-  await sendQmsg(`昵称：${msg.name}\nQQ：${q}\nIP：${userIP}\n内容：${c}`);
+  await loadAll();
+  await sendQmsg(`昵称：${ret.nick}\n输入：${nickInputVal}\nIP：${userIP}\n内容：${c}`);
 
   document.getElementById("content").value="";
-  qqInput.value="";
-  nickPreview.style.display="none";
-  currentNickname="";
+  nickInput.value="";
   refreshAllWordTip();
   renderMsg();
   alert("发布成功！");
@@ -832,6 +801,14 @@ function renderMsg(){
       `<span class="tag-item" style="background:${t.color}">${t.text}</span>`
     ).join('');
 
+    // 头像：只有存在qq字段才渲染QQ头像
+    let avatarHtml = "";
+    if(item.qq){
+      avatarHtml = `<img src="${item.avatar}" class="avatar" onerror="this.src='https://q.qlogo.cn/headimg_dl?dst_uin=10000&spec=100'">`;
+    }else{
+      avatarHtml = `<div class="avatar" style="display:flex;align-items:center;justify-content:center;color:#888;">${item.name.slice(0,1)}</div>`;
+    }
+
     const d = document.createElement("div");
     d.className = `message-item ${item.isTop ? 'top' : ''}`;
     d.innerHTML = `
@@ -841,11 +818,11 @@ function renderMsg(){
         <button class="act-top">顶</button>
         <button class="act-edit">编</button>
       </div>
-      <img src="${item.avatar}" class="avatar" onerror="this.src='https://q.qlogo.cn/headimg_dl?dst_uin=10000&spec=100'">
+      ${avatarHtml}
       <div class="msg-right">
         <div class="name">${item.name} ${top} ${tags}</div>
         <div class="content">${item.content}</div>
-        <div class="qq-time-ip">QQ: ${item.qq} | ${item.time} | IP: ${item.ip}</div>
+        <div class="qq-time-ip">${item.qq?`QQ: ${item.qq} | `:""}${item.time} | IP: ${item.ip}</div>
       </div>
     `;
     w.appendChild(d);
